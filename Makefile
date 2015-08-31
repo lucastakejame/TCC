@@ -11,6 +11,7 @@ CFLAGS += -I/usr/include/opencv/
 # CFLAGS += -I../opencv-2.4.10/modules/imgproc/include
 # CFLAGS += -I/usr/local/include/SDL
 CFLAGS += $(DEBUG)
+CFLAGS += -std=c++11
 
 LDFLAGS = 
 # LDFLAGS = -lSDL

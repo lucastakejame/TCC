@@ -350,7 +350,7 @@ void Figure::Show()
 
 bool PlotManager::HasFigure(string wnd)
 {
-    return false;   
+    return false;
 }
 
 // search a named window, return null if not found.
@@ -437,6 +437,7 @@ void plot(const string figure_name, const T* p, int count, int step,
         src += step;
     }
 
+
     pm.Plot(figure_name, data_copy, count, 1, R, G, B);
 
     delete [] data_copy;
@@ -469,6 +470,9 @@ void plot(const string figure_name, const int* p, int count, int step,
 
 template
 void plot(const string figure_name, const short* p, int count, int step,
+          int R, int G, int B);
+template
+void plot(const string figure_name, const float* p, int count, int step,
           int R, int G, int B);
 
 };
