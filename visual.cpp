@@ -28,6 +28,7 @@ static void col_profile(const Mat& mat_src, int col_src, const char* window_name
 static void paint_col(Mat src, int src_col);
 static Mat mark_max(const Mat& mat_src, int col, int threshold);
 Mat edge_detection_thresh(const Mat& mat_src, const Mat& mat_dy, vector<Point> pts_col_xtrm);
+Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Point> pts_col_xtrm);
 
 
 // resize matrix to show
@@ -114,7 +115,7 @@ static void cb_col_profile(int param, void* user_data)
         }
     }
 
-    Mat mat_A_B = edge_detection_thresh(g_mat_src, g_mat_dy, pts_max);
+    Mat mat_A_B = edge_detection_thresh2(g_mat_src, g_mat_dy, pts_max);
 
 
     CvPlot::clear("Perfil");
@@ -215,7 +216,7 @@ static Mat mark_max(const Mat& mat_src, int col, int threshold)
 
     }
 
-    {
+    // {
         static int count = 0;
         static float media = 0;
 
@@ -224,12 +225,12 @@ static Mat mark_max(const Mat& mat_src, int col, int threshold)
 
         fprintf(stderr, "Number of max found: %i\n", pts_max.size());
         fprintf(stderr, "Média: %i\n", (int)media);
-    }
+    // }
 
     // cout << pts_max << endl;
     // fprintf(stderr, "threshold: %i\n", threshold);
 
-    if(pts_max.size() < 2 && threshold > 1)
+    if(pts_max.size() < media && threshold > 1)
     {
         mat_dst.release();
         // cout << "Vai passar de novo" << endl;
@@ -247,10 +248,10 @@ Mat edge_detection_thresh(const Mat& mat_src, const Mat& mat_dy, vector<Point> p
  /*
  pts_col_xtrm saves the extremes from a mat_src's column
  */
-    Mat mat_max;
-    mat_max.create(mat_src.rows, mat_src.cols, mat_src.type());
+    Mat mat_A_B;
+    mat_A_B.create(mat_src.rows, mat_src.cols, mat_src.type());
 
-
+    int last_idx_end = 0;
     for (int i = 0; i < pts_col_xtrm.size(); ++i)
     {
         int idx_range = 50;
@@ -264,15 +265,31 @@ Mat edge_detection_thresh(const Mat& mat_src, const Mat& mat_dy, vector<Point> p
         {
             idx_init = 0;
         }
+        else // if it is not the first extremum.
+        {
+            if(i > 0 && idx_init < last_idx_end)
+            {
+                idx_init = last_idx_end;
+            }
+        }
         if(idx_end >= mat_src.rows)
         {
             idx_end = mat_src.rows-1;
+        }
+        if(i < pts_col_xtrm.size()-1)
+        {
+            if(idx_end > pts_col_xtrm[i+1].y)
+            {
+                idx_end = pts_col_xtrm[i+1].y;
+            }
         }
 
         if(mat_dy.at<float>(idx_src_row, idx_src_col) > 0)
         {
             min_to_max = true;
         }
+
+        last_idx_end = idx_end;
 
         int min = 255;
         int max = 0;
@@ -320,32 +337,97 @@ Mat edge_detection_thresh(const Mat& mat_src, const Mat& mat_dy, vector<Point> p
             {
                 if(idx < idx_src_row)
                 {
-                    mat_max.at<unsigned char>(idx, idx_src_col) = min;
+                    mat_A_B.at<unsigned char>(idx, idx_src_col) = min;
                 }
                 else
                 {
-                    mat_max.at<unsigned char>(idx, idx_src_col) = max;
+                    mat_A_B.at<unsigned char>(idx, idx_src_col) = max;
                 }
             }
             else
             {
                 if(idx < idx_src_row)
                 {
-                    mat_max.at<unsigned char>(idx, idx_src_col) = max;
+                    mat_A_B.at<unsigned char>(idx, idx_src_col) = max;
                 }
                 else
                 {
-                    mat_max.at<unsigned char>(idx, idx_src_col) = min;
+                    mat_A_B.at<unsigned char>(idx, idx_src_col) = min;
                 }
             }
         }
 
     }
 
-    return mat_max;
+    return mat_A_B;
 
 }
 
+Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Point> pts_col_xtrm)
+{
+    Mat mat_A_B;
+    mat_A_B.create(mat_src.rows, mat_src.cols, mat_src.type());
+
+    int idx_last_marked = 0;
+    for (int i = 0; i <= pts_col_xtrm.size(); ++i)
+    {
+        int idx_src_col;
+        int idx_src_row;
+        float val_col_xtrm;
+
+        if(i < pts_col_xtrm.size())
+        {
+            idx_src_col = pts_col_xtrm[i].x;  // column from mat_src
+            idx_src_row = pts_col_xtrm[i].y;  // idx in a column seen as array in mat_src
+
+            val_col_xtrm = mat_dy.at<float>(idx_src_row, idx_src_col); // value of extremum in mat_dy
+        }
+        else
+        {
+            idx_src_col = pts_col_xtrm[i-1].x;  // column from mat_src
+            idx_src_row = mat_src.rows;  // idx in a column seen as array in mat_src
+
+            val_col_xtrm = -mat_dy.at<float>(pts_col_xtrm[i-1].y, pts_col_xtrm[i-1].x); // value of extremum in mat_dy
+        }
+
+        int min = 255, max = 0;
+        if(val_col_xtrm > 0)
+        {
+            for (int idx = idx_last_marked; idx < idx_src_row; ++idx)
+            {
+                int val = mat_src.at<unsigned char>(idx, idx_src_col);
+                if(min > val)
+                {
+                    min = val;
+                }
+            }
+            for (int idx = idx_last_marked; idx < idx_src_row; ++idx)
+            {
+                mat_A_B.at<unsigned char>(idx, idx_src_col) = min;
+            }
+        }
+        else
+        {
+            for (int idx = idx_last_marked; idx < idx_src_row; ++idx)
+            {
+                int val = mat_src.at<unsigned char>(idx, idx_src_col);
+                if(max < val)
+                {
+                    max = val;
+                }
+            }
+            for (int idx = idx_last_marked; idx < idx_src_row; ++idx)
+            {
+                mat_A_B.at<unsigned char>(idx, idx_src_col) = max;
+            }
+        }
+
+        idx_last_marked = idx_src_row;
+
+    }
+
+    return mat_A_B;
+}
 /** @function main */
 int main ( int argc, char** argv )
 {
