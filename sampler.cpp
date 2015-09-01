@@ -18,11 +18,13 @@
 // using namespace std;
 // using namespace cv;
 
-// // struct PandV
-// // {
-// //     Point pt;
-// //     float val;
-// // };
+// struct Candidate
+// {
+//     Point position;
+//     int val_left;
+//     int val_position;
+//     int val_right;
+// };
 
 // struct Trace
 // {
@@ -172,31 +174,6 @@
 
 // }
 
-
-// // static Point get_max_cludge(const Mat& mat_src, int col, int index_start, int index_end)
-// // {
-// //     float max = 0;
-// //     Point pnt_max = Point(0,0);
-
-// //     if(index_start < 0)
-// //         index_start = 0;
-
-// //     if(index_end > mat_src.rows)
-// //         index_end = mat_src.rows;
-
-// //     for (int i = index_start; i < index_end; ++i)
-// //     {
-// //         if(mat_src.at<int>(i, col) > max)
-// //         {
-// //             max = mat_src.at<int>(i, col);
-// //             pnt_max.x = col;
-// //             pnt_max.y = i;
-// //         }
-// //     }
-
-// //     return pnt_max;
-// // }
-
 // // static vector<float> extract_audio_cludge(const Mat& mat_src)
 // // {
 // //     vector<float> max_vals;
@@ -225,102 +202,6 @@
 
 // //     return dif;
 
-// // }
-
-// // static vector<Point> extreme_values_from_col(const Mat& mat_src, int pos_column, int row_init, int row_end)
-// // {
-// //     vector<Point> vec_max;
-// //     Point pnt_max1(0,0);
-// //     Point pnt_max2(0,0);
-// //     Point pnt_max3(0,0);
-// //     Point pnt_max4(0,0);
-
-// //     int max1 = 0;
-// //     int max2 = 0;
-// //     int max3 = 0;
-// //     int max4 = 0; //biggest
-
-// //     Mat mat_dy;
-
-// //     if(row_end > mat_src.rows)
-// //         row_end = mat_src.rows;
-
-// //     filter(mat_src, mat_dy);
-
-// //     for (int pos_row = row_init; pos_row < row_end-1; ++pos_row)
-// //     {
-// //         int val1_dy = mat_dy.at<int>(pos_row, pos_column);
-// //         int val2_dy = mat_dy.at<int>(pos_row+1, pos_column);
-
-// //         if(val1_dy * val2_dy <= 0)
-// //         {
-// //             int val1_src = mat_src.at<int>(pos_row, pos_column);
-// //             int val2_src = mat_src.at<int>(pos_row+1, pos_column);
-
-// //             int local_max;
-// //             Point pnt_local_max;
-
-// //             if(fabs(val2_src) > fabs(val1_src))
-// //             {
-// //                 local_max = val2_src;
-// //                 pnt_local_max = Point(pos_row+1, pos_column);
-// //             }
-// //             else
-// //             {
-// //                 local_max = val1_src;
-// //                 pnt_local_max = Point(pos_row, pos_column);
-// //             }
-
-// //             if(fabs(local_max) > fabs(max1))
-// //             {
-// //                 if(fabs(local_max) > fabs(max4))
-// //                 {
-// //                     max1 = max2;
-// //                     max2 = max3;
-// //                     max3 = max4;
-// //                     max4 = local_max;
-
-// //                     pnt_max1 = pnt_max2;
-// //                     pnt_max2 = pnt_max3;
-// //                     pnt_max3 = pnt_max4;
-// //                     pnt_max4 = pnt_local_max;
-// //                 }
-// //                 else if(fabs(local_max) > fabs(max3))
-// //                 {
-// //                     max1 = max2;
-// //                     max2 = max3;
-// //                     max3 = local_max;
-
-// //                     pnt_max1 = pnt_max2;
-// //                     pnt_max2 = pnt_max3;
-// //                     pnt_max3 = pnt_local_max;
-// //                 }
-// //                 else if(fabs(local_max) > fabs(max2))
-// //                 {
-// //                     max1 = max2;
-// //                     max2 = local_max;
-
-// //                     pnt_max1 = pnt_max2;
-// //                     pnt_max2 = pnt_local_max;
-// //                 }
-// //                 else
-// //                 {
-// //                     max1 = local_max;
-// //                     pnt_max1 = pnt_local_max;
-// //                 }
-// //             }
-
-// //             pos_row++;
-// //             pos_row++;
-// //         }
-// //     }
-
-// //     vec_max.push_back(pnt_max1);
-// //     vec_max.push_back(pnt_max2);
-// //     vec_max.push_back(pnt_max3);
-// //     vec_max.push_back(pnt_max4);
-
-// //     return vec_max;
 // // }
 
 // /** @function main */

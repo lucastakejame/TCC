@@ -6,21 +6,33 @@
 
 #include "cvplot.h"
 
+#define cerr(x) cerr << x << endl;
+#define cerrv(x) cerr <<  #x << " : " << x << endl;
+
+
 using namespace std;
 using namespace cv;
 
 const int LIMIT_ALPHA = 10;
 const int LIMIT_SZ_KERNEL = 20;
-const int LIMIT_SEL_COL = 9999;
+int LIMIT_SEL_COL;
 const int TRACE_WIDTH = 130;
 
 static int g_prm_alpha = 2;
 static int g_prm_sz_kernel = 5;
-static int g_prm_sel_col = 4040;
+static int g_prm_sel_col = 0;
 
 
 Mat g_mat_src;
 Mat g_mat_dy;
+
+struct Candidate
+{
+    Point2d position;
+    int val_left;
+    int val_position;
+    int val_right;
+};
 
 static void cb_filter(int param, void* user_data);
 static void cb_col_profile(int param, void* user_data);
@@ -28,7 +40,7 @@ static void col_profile(const Mat& mat_src, int col_src, const char* window_name
 static void paint_col(Mat src, int src_col);
 static Mat mark_max(const Mat& mat_src, int col, int threshold);
 Mat edge_detection_thresh(const Mat& mat_src, const Mat& mat_dy, vector<Point> pts_col_xtrm);
-Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Point> pts_col_xtrm);
+Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Candidate>& pts_candidate);
 
 
 // resize matrix to show
@@ -100,22 +112,129 @@ static void cb_col_profile(int param, void* user_data)
 
     // normalized sel_col param, bounded in [0,1]
     float norm_sel_col = (float)g_prm_sel_col/LIMIT_SEL_COL;
+    int orig_mat_col = g_prm_sel_col;
+    // int orig_mat_col = (float)(g_mat_dy.cols-1)*norm_sel_col;
 
-    int orig_mat_col = (float)(g_mat_dy.cols-1)*norm_sel_col;
 
-    Mat mat_dst = mark_max(g_mat_dy, orig_mat_col, 30); // mark the extremes from mat_dy
+    Mat mat_dst = mark_max(g_mat_dy, orig_mat_col, 35); // mark the extremes from mat_dy
 
-    vector<Point> pts_max;
+    vector<Candidate> pts_cnddt;
 
     for (int i = 0; i < mat_dst.rows; ++i)
     {
         if(mat_dst.at<float>(i, orig_mat_col) != 0)
         {
-            pts_max.push_back(Point(orig_mat_col, i));
+            Candidate temp = {Point(orig_mat_col, i), 0, g_mat_src.at<unsigned char>(i, orig_mat_col), 0};
+            pts_cnddt.push_back(temp);
         }
     }
 
-    Mat mat_A_B = edge_detection_thresh2(g_mat_src, g_mat_dy, pts_max);
+    Mat mat_A_B = edge_detection_thresh2(g_mat_src, g_mat_dy, pts_cnddt);
+
+    for (int i = 0; i < mat_A_B.rows; ++i)
+    {
+        mat_A_B.at<unsigned char>(i, orig_mat_col) = 0;
+    }
+
+    // refined edge location
+    int countt = 0;
+    for (int i = 0; i < pts_cnddt.size(); ++i)
+    {
+        double threshold = 0.7; // beta, in the edge model.
+        double val_edge;
+        int row_edge = pts_cnddt[i].position.y;
+        int col_edge = pts_cnddt[i].position.x;
+
+        int val_smaller;
+        int val_bigger;
+
+        double pos_new_edge;
+
+        if(pts_cnddt[i].val_left < pts_cnddt[i].val_right)
+        {
+            // val_right is A, val_left is B
+            val_edge = threshold*fabs(pts_cnddt[i].val_right - pts_cnddt[i].val_left) + pts_cnddt[i].val_left;
+
+            if(val_edge < pts_cnddt[i].val_position)
+            {
+                int k = (int)row_edge;
+                while(g_mat_src.at<unsigned char>(k, col_edge) > val_edge)
+                {
+                    k--;
+                }
+
+                val_smaller = g_mat_src.at<unsigned char>(k, col_edge);
+                val_bigger = g_mat_src.at<unsigned char>(k+1, col_edge);
+
+                // interpolation to find edge position with subpixel accuracy
+
+                pos_new_edge = (val_edge-val_smaller)/(val_bigger-val_smaller) + k;
+
+            }
+            else
+            {
+                int k = (int)row_edge;
+                while(g_mat_src.at<unsigned char>(k, col_edge) < val_edge)
+                {
+                    k++;
+                }
+                val_smaller = g_mat_src.at<unsigned char>(k-1, col_edge);
+                val_bigger = g_mat_src.at<unsigned char>(k, col_edge);
+
+                // interpolation to find edge position with subpixel accuracy
+
+                pos_new_edge = (val_edge-val_smaller)/(val_bigger-val_smaller) + k-1;
+
+            }
+        }
+        else
+        {
+            val_edge = threshold*(pts_cnddt[i].val_left - pts_cnddt[i].val_right) + pts_cnddt[i].val_right;
+
+            if(val_edge < pts_cnddt[i].val_position)
+            {
+                int k = (int)row_edge;
+                while(g_mat_src.at<unsigned char>(k, col_edge) > val_edge)
+                {
+                    k++;
+                }
+                val_smaller = g_mat_src.at<unsigned char>(k, col_edge);
+                val_bigger = g_mat_src.at<unsigned char>(k-1, col_edge);
+
+                // interpolation to find edge position with subpixel accuracy
+
+                pos_new_edge = (double)k - (val_edge-val_smaller)/(val_bigger-val_smaller);
+
+            }
+            else
+            {
+                int k = (int)row_edge;
+                while(g_mat_src.at<unsigned char>(k, col_edge) < val_edge)
+                {
+                    k--;
+                }
+                val_smaller = g_mat_src.at<unsigned char>(k+1, col_edge);
+                val_bigger = g_mat_src.at<unsigned char>(k, col_edge);
+
+                // interpolation to find edge position with subpixel accuracy
+
+                pos_new_edge = (double)k - (val_edge-val_smaller)/(val_bigger-val_smaller);
+
+            }
+        }
+
+
+        if(pos_new_edge > 0)
+        {
+            mat_A_B.at<unsigned char>((int)pos_new_edge, pts_cnddt[i].position.x) = val_edge;
+            countt++;
+        }
+    }
+    cerrv(countt);
+    cerrv(pts_cnddt.size());
+    cerrv(pts_cnddt.size() - countt);
+
+
 
 
     CvPlot::clear("Perfil");
@@ -223,18 +342,16 @@ static Mat mark_max(const Mat& mat_src, int col, int threshold)
         media = (media*count + pts_max.size()) / (count+1);
         count++;
 
-        fprintf(stderr, "Number of max found: %i\n", pts_max.size());
-        fprintf(stderr, "Média: %i\n", (int)media);
+        // fprintf(stderr, "Number of max found: %i\n", pts_max.size());
+        // fprintf(stderr, "Média: %i\n", (int)media);
     // }
 
     // cout << pts_max << endl;
     // fprintf(stderr, "threshold: %i\n", threshold);
 
-    if(pts_max.size() < media && threshold > 1)
+    if(pts_max.size() < media && threshold > 10)
     {
         mat_dst.release();
-        // cout << "Vai passar de novo" << endl;
-        // cin.get();
         return mark_max(mat_src, col, threshold*0.9);
     }
     else
@@ -363,35 +480,35 @@ Mat edge_detection_thresh(const Mat& mat_src, const Mat& mat_dy, vector<Point> p
 
 }
 
-Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Point> pts_col_xtrm)
+Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Candidate>& pts_candidate)
 {
     Mat mat_A_B;
     mat_A_B.create(mat_src.rows, mat_src.cols, mat_src.type());
 
-    int idx_last_marked = 0;
-    for (int i = 0; i <= pts_col_xtrm.size(); ++i)
+    int idx_last_marked = 0; // used as boundary
+    for (int i = 0; i <= pts_candidate.size(); ++i)
     {
         int idx_src_col;
         int idx_src_row;
         float val_col_xtrm;
 
-        if(i < pts_col_xtrm.size())
+        if(i < pts_candidate.size())
         {
-            idx_src_col = pts_col_xtrm[i].x;  // column from mat_src
-            idx_src_row = pts_col_xtrm[i].y;  // idx in a column seen as array in mat_src
+            idx_src_col = pts_candidate[i].position.x;  // column from mat_src
+            idx_src_row = pts_candidate[i].position.y;  // idx in a column seen as array in mat_src
 
             val_col_xtrm = mat_dy.at<float>(idx_src_row, idx_src_col); // value of extremum in mat_dy
         }
-        else
+        else // thats after the last point.
         {
-            idx_src_col = pts_col_xtrm[i-1].x;  // column from mat_src
+            idx_src_col = pts_candidate[i-1].position.x;  // column from mat_src
             idx_src_row = mat_src.rows;  // idx in a column seen as array in mat_src
 
-            val_col_xtrm = -mat_dy.at<float>(pts_col_xtrm[i-1].y, pts_col_xtrm[i-1].x); // value of extremum in mat_dy
+            val_col_xtrm = -mat_dy.at<float>(pts_candidate[i-1].position.y, pts_candidate[i-1].position.x); // value of extremum in mat_dy
         }
 
         int min = 255, max = 0;
-        if(val_col_xtrm > 0)
+        if(val_col_xtrm > 0) // if its a positive edge (crescent from left to right)
         {
             for (int idx = idx_last_marked; idx < idx_src_row; ++idx)
             {
@@ -405,8 +522,18 @@ Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Point> 
             {
                 mat_A_B.at<unsigned char>(idx, idx_src_col) = min;
             }
+
+            // set candidate neighbour values (A and B from edge model)
+            if(i > 0)
+            {
+                pts_candidate[i-1].val_right = min;
+            }
+            if(i < pts_candidate.size())
+            {
+                pts_candidate[i].val_left = min;
+            }
         }
-        else
+        else // if its a negative edge
         {
             for (int idx = idx_last_marked; idx < idx_src_row; ++idx)
             {
@@ -420,6 +547,15 @@ Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Point> 
             {
                 mat_A_B.at<unsigned char>(idx, idx_src_col) = max;
             }
+            // set candidate neighbour values (A and B from edge model)
+            if(i > 0)
+            {
+                pts_candidate[i-1].val_right = max;
+            }
+            if(i < pts_candidate.size())
+            {
+                pts_candidate[i].val_left = max;
+            }
         }
 
         idx_last_marked = idx_src_row;
@@ -428,6 +564,7 @@ Mat edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Point> 
 
     return mat_A_B;
 }
+
 /** @function main */
 int main ( int argc, char** argv )
 {
@@ -439,6 +576,8 @@ int main ( int argc, char** argv )
     {
         g_mat_src = g_mat_src.t();
     }
+
+    LIMIT_SEL_COL = g_mat_src.cols-1;
 
     // negative src so the traces are white.
     bitwise_not(g_mat_src, g_mat_src);
