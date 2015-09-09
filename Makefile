@@ -5,6 +5,7 @@ DEGUB = -g
 
 CFLAGS = -Wall -Wextra -Wpointer-arith -Wredundant-decls
 # CFLAGS += -Wcast-align -Wcast-qual
+CFLAGS += -o3
 CFLAGS += -I/usr/include/opencv/
 # CFLAGS += -I../opencv-2.4.10/include/opencv/
 # CFLAGS += -I../opencv-2.4.10/modules/*/include
@@ -13,7 +14,7 @@ CFLAGS += -I/usr/include/opencv/
 CFLAGS += $(DEBUG)
 CFLAGS += -std=c++11
 
-LDFLAGS = 
+LDFLAGS =
 # LDFLAGS = -lSDL
 # LDFLAGS = `pkg-config opencv --cflags` `pkg-config opencv --libs`
 # LDFLAGS += -ljpeg

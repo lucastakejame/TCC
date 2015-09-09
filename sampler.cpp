@@ -20,7 +20,7 @@
 
 // struct Candidate
 // {
-//     Point position;
+//     Point2d position;
 //     int val_left;
 //     int val_position;
 //     int val_right;
@@ -39,6 +39,41 @@
 // static vector<Point> extreme_values_from_col(const Mat& mat_src, int pos_column);
 // static vector<Point> mark_extremes(const Mat& mat_src, int col, int threshold);
 
+// int find_min(const Mat& mat_col_header /*1D array*/, int idx_begin, int length_sweep)
+// {
+//     int min;
+
+//     min = 255;
+
+//     for (int idx = idx_begin; idx < idx_begin + length_sweep; ++idx)
+//     {
+//         int val = mat_col_header.at<unsigned char>(idx);
+//         if(min > val)
+//         {
+//             min = val;
+//         }
+//     }
+
+//     return min;
+// }
+
+// int find_max(const Mat& mat_col_header /*1D array*/, int idx_begin, int length_sweep)
+// {
+//     int max;
+
+//     max = 0;
+
+//     for (int idx = idx_begin; idx < idx_begin + length_sweep; ++idx)
+//     {
+//         int val = mat_col_header.at<unsigned char>(idx);
+//         if(max < val)
+//         {
+//             max = val;
+//         }
+//     }
+
+//     return max;
+// }
 
 // // resize matrix to show
 // static Mat resize_mat(const Mat& src)
@@ -131,47 +166,61 @@
 //     }
 // }
 
-// void edge_detection_thresh(const Mat& mat_src, vector<Point> pts_max)
+// void edge_detection_thresh2(const Mat& mat_src, const Mat& mat_dy, vector<Candidate>& pts_candidate)
 // {
-//     // for (int i = 0; i < pts_max.size(); ++i)
-//     int i = 0;
+//     int idx_last_marked = 0; // used as boundary
+//     for (int i = 0; i <= pts_candidate.size(); ++i)
 //     {
-//         int idx_range = 8;
-//         int idx_profile = pts_max[i].y;
-//         int idx_init = idx_profile - idx_range;
-//         int idx_end = idx_profile + idx_range;
+//         int idx_src_col;
+//         int idx_src_row;
+//         float val_col_xtrm;
 
-//         if(idx_init < 0)
+//         if(i < pts_candidate.size())
 //         {
-//             idx_init = 0;
+//             idx_src_col = pts_candidate[i].position.x;  // column from mat_src
+//             idx_src_row = pts_candidate[i].position.y;  // idx in a column seen as array in mat_src
+
+//             val_col_xtrm = mat_dy.at<float>(idx_src_row, idx_src_col); // value of extremum in mat_dy
 //         }
-//         if(idx_end >= mat_src.rows)
+//         else // thats after the last point.
 //         {
-//             idx_end = mat_src.rows-1;
+//             idx_src_col = pts_candidate[i-1].position.x;  // column from mat_src
+//             idx_src_row = mat_src.rows;  // idx in a column seen as array in mat_src
+
+//             val_col_xtrm = -mat_dy.at<float>(pts_candidate[i-1].position.y, pts_candidate[i-1].position.x); // value of extremum in mat_dy
 //         }
 
-//         int min = 255;
-//         int max = 0;
-//         for (int idx = idx_init; idx < idx_end; ++idx)
+//         if(val_col_xtrm > 0) // if its a positive edge (crescent from left to right)
 //         {
-//             int val = mat_src.at<unsigned char>(idx, i);
-//             if(min > val)
+//             int min = find_min(mat_src.col(idx_src_col), idx_last_marked, idx_src_row - idx_last_marked);
+
+//             // set candidate neighbour values (A and B from edge model)
+//             if(i > 0)
 //             {
-//                 min = val;
+//                 pts_candidate[i-1].val_right = min;
 //             }
-//             if(max < val)
+//             if(i < pts_candidate.size())
 //             {
-//                 max = val;
+//                 pts_candidate[i].val_left = min;
 //             }
+//         }
+//         else // if its a negative edge
+//         {
+//             int max = find_max(mat_src.col(idx_src_col), idx_last_marked, idx_src_row - idx_last_marked);
 
+//             // set candidate neighbour values (A and B from edge model)
+//             if(i > 0)
+//             {
+//                 pts_candidate[i-1].val_right = max;
+//             }
+//             if(i < pts_candidate.size())
+//             {
+//                 pts_candidate[i].val_left = max;
+//             }
 //         }
 
-//         fprintf(stderr, "min: %i\n", min);
-//         fprintf(stderr, "max: %i\n", max);
-
+//         idx_last_marked = idx_src_row;
 //     }
-
-
 // }
 
 // // static vector<float> extract_audio_cludge(const Mat& mat_src)
