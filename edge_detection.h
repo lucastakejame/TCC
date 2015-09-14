@@ -14,8 +14,15 @@ using namespace cv;
 
 struct Trace
 {
-    vector<Point2d> pts_rise_edge;
-    vector<Point2d> pts_fall_edge;
+    vector<double> pts_rise_edge;
+    vector<double> pts_fall_edge;
+
+    double pos_estimated_rise; // this will change from column to column
+    double pos_estimated_fall; //
+
+    double tolerance = 100; // called m in the thesis, its the distance of tolerance around the reference candidate
+
+    double trace_width; // trace width estimated to that time slice (column).
 };
 
 #define cerr(x) cerr << x;
@@ -44,5 +51,12 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
 Mat n_first_last_col_average(const Mat& mat_ring_first, const Mat& mat_ring_last, int range_average);
 
 vector<Trace> initialize_traces(const Mat& mat_ring_first, const Mat& mat_ring_last, int range_average);
+
+double closest_to_estimation(vector<Candidate> pts_candidate, double estimated_edge, double tolerance_min, double tolerance_max);
+
+void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<Trace>& traces, int analyzed_col);
+
+vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_visual);
+
 
 #endif

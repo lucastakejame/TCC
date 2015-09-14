@@ -58,7 +58,7 @@ Mat resize_mat(const Mat& src)
 static void cb_avrg(int param, void* user_data)
 {
     CvPlot::clear("Average");
-    CvPlot::clear("Average_DY");
+    CvPlot::clear("Average 2");
 
     Mat mat_n_average;
     Mat mat_dy;
@@ -95,10 +95,10 @@ static void cb_avrg(int param, void* user_data)
     {
         int idx;
 
-        idx = traces[i].pts_rise_edge[0].y;
+        idx = traces[i].pos_estimated_rise;
         mat_edges.at<unsigned char>(idx) = 200;
         cerrv(idx)
-        idx = traces[i].pts_fall_edge[0].y;
+        idx = traces[i].pos_estimated_fall;
         mat_edges.at<unsigned char>(idx) = 200;
         cerrv(idx)
 
@@ -267,6 +267,34 @@ int main ( int argc, char** argv )
     if( !g_mat_src.data )
         { return -1; }
 
+
+    Mat mat_traces = Mat::zeros(g_mat_src.rows, g_mat_src.cols, CV_8UC3);
+
+    vector<Trace> traces = trace_following(g_mat_src, g_mat_src2, mat_traces);
+
+    for (int i = 0; i < traces.size(); ++i)
+    {
+        for (int j = 0; j < traces[i].pts_rise_edge.size(); ++j)
+        {
+            if(traces[i].pts_rise_edge[j] > 0)
+            {
+                mat_traces.col(j).at<Vec3b>((int)traces[i].pts_rise_edge[j])[1] = 255;
+            }
+            if(traces[i].pts_fall_edge[j] > 0)
+            {
+                mat_traces.col(j).at<Vec3b>((int)traces[i].pts_fall_edge[j])[1] = 255;
+            }
+        }
+    }
+
+    // namedWindow( "traces", CV_WINDOW_AUTOSIZE );
+    // imshow( "traces", resize_mat(mat_traces) );
+    imwrite( "LIXASSO.bmp", mat_traces);
+
+    waitKey(0);
+
+
+    return 1;
 
     // Create window
     namedWindow( "dy derivative", CV_WINDOW_AUTOSIZE );
