@@ -1,0 +1,891 @@
+%% abtex2-modelo-trabalho-academico.tex, v-1.9.5 laurocesar
+%% Copyright 2012-2015 by abnTeX2 group at http://www.abntex.net.br/ 
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%% 
+%% The Current Maintainer of this work is the abnTeX2 team, led
+%% by Lauro César Araujo. Further information are available on 
+%% http://www.abntex.net.br/
+%%
+%% This work consists of the files abntex2-modelo-trabalho-academico.tex,
+%% abntex2-modelo-include-comandos and abntex2-modelo-references.bib
+%%
+
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+% abnTeX2: Modelo de Trabalho Academico (tese de doutorado, dissertacao de
+% mestrado e trabalhos monograficos em geral) em conformidade com 
+% ABNT NBR 14724:2011: Informacao e documentacao - Trabalhos academicos -
+% Apresentacao
+% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+
+\documentclass[
+	% -- opções da classe memoir --
+	12pt,				% tamanho da fonte
+	openright,			% capítulos começam em pág ímpar (insere página vazia caso preciso)
+	twoside,			% para impressão em verso e anverso. Oposto a oneside
+	a4paper,			% tamanho do papel. 
+	% -- opções da classe abntex2 --
+	%chapter=TITLE,		% títulos de capítulos convertidos em letras maiúsculas
+	%section=TITLE,		% títulos de seções convertidos em letras maiúsculas
+	%subsection=TITLE,	% títulos de subseções convertidos em letras maiúsculas
+	%subsubsection=TITLE,% títulos de subsubseções convertidos em letras maiúsculas
+	% -- opções do pacote babel --
+	english,			% idioma adicional para hifenização
+	french,				% idioma adicional para hifenização
+	spanish,			% idioma adicional para hifenização
+	brazil				% o último idioma é o principal do documento
+	]{abntex2}
+
+% ---
+% Pacotes básicos 
+% ---
+\usepackage{lmodern}			% Usa a fonte Latin Modern			
+\usepackage[T1]{fontenc}		% Selecao de codigos de fonte.
+\usepackage[utf8]{inputenc}		% Codificacao do documento (conversão automática dos acentos)
+\usepackage{lastpage}			% Usado pela Ficha catalográfica
+\usepackage{indentfirst}		% Indenta o primeiro parágrafo de cada seção.
+\usepackage{color}				% Controle das cores
+\usepackage{graphicx}			% Inclusão de gráficos
+\usepackage{microtype} 			% para melhorias de justificação
+
+\usepackage{amsmath} 			% Matemática
+% ---
+		
+% ---
+% Pacotes adicionais, usados apenas no âmbito do Modelo Canônico do abnteX2
+% ---
+\usepackage{lipsum}				% para geração de dummy text
+% ---
+
+% ---
+% Pacotes de citações
+% ---
+\usepackage[brazilian,hyperpageref]{backref}	 % Paginas com as citações na bibl
+\usepackage[alf]{abntex2cite}	% Citações padrão ABNT
+
+% --- 
+% CONFIGURAÇÕES DE PACOTES
+% --- 
+
+% --- 
+% MACROS
+% --- 
+
+\newcommand{\estimr}{\hat{r}_i(j)}
+\newcommand{\estimf}{\hat{f}_i(j)}
+\newcommand{\func}[3]{#1_{#2}(#3)}
+\newcommand{\funchat}[3]{\hat{#1}_{#2}(#3)}
+\newcommand{\funcbar}[3]{\overline{#1}_{#2}(#3)}
+
+
+% ---
+% Configurações do pacote backref
+% Usado sem a opção hyperpageref de backref
+\renewcommand{\backrefpagesname}{Citado na(s) página(s):~}
+% Texto padrão antes do número das páginas
+\renewcommand{\backref}{}
+% Define os textos da citação
+\renewcommand*{\backrefalt}[4]{
+	\ifcase #1 %
+		Nenhuma citação no texto.%
+	\or
+		Citado na página #2.%
+	\else
+		Citado #1 vezes nas páginas #2.%
+	\fi}%
+% ---
+
+% ---
+% Informações de dados para CAPA e FOLHA DE ROSTO
+% ---
+\titulo{Extração de áudio de vinil\\ por processamento de imagem}
+\autor{Lucas Conejero Takejame}
+\local{Brasil}
+\data{2015}
+\orientador{Edson Satoshi Gomi}
+\coorientador{Bruno Carvalho Albertini}
+\instituicao{%
+  Escola Politécnica da Universidade de São Paulo -- EPUSP
+  \par
+  Engenharia elétrica com ênfase em Computação
+  \par
+  Graduação}
+\tipotrabalho{Trabalho de conclusão de curso (Graduação)}
+% O preambulo deve conter o tipo do trabalho, o objetivo, 
+% o nome da instituição e a área de concentração 
+\preambulo{Texto apresentado à Escola Politécnica
+da Universidade de São Paulo como
+requisito para a conclusão do curso
+de graduação em Engenharia Elétrica
+com ênfase em Computação, junto
+ao Departamento de Engenharia de
+Computação e Sistemas Digitais (PCS)}
+% ---
+
+
+% ---
+% Configurações de aparência do PDF final
+
+% alterando o aspecto da cor azul
+\definecolor{blue}{RGB}{41,5,195}
+
+% informações do PDF
+\makeatletter
+\hypersetup{
+     	%pagebackref=true,
+		pdftitle={\@title}, 
+		pdfauthor={\@author},
+    	pdfsubject={\imprimirpreambulo},
+	    pdfcreator={LaTeX with abnTeX2},
+		pdfkeywords={abnt}{latex}{abntex}{abntex2}{trabalho acadêmico}, 
+		colorlinks=true,       		% false: boxed links; true: colored links
+    	linkcolor=blue,          	% color of internal links
+    	citecolor=blue,        		% color of links to bibliography
+    	filecolor=magenta,      		% color of file links
+		urlcolor=blue,
+		bookmarksdepth=4
+}
+\makeatother
+% --- 
+
+% --- 
+% Espaçamentos entre linhas e parágrafos 
+% --- 
+
+% O tamanho do parágrafo é dado por:
+\setlength{\parindent}{1.3cm}
+
+% Controle do espaçamento entre um parágrafo e outro:
+\setlength{\parskip}{0.2cm}  % tente também \onelineskip
+
+% ---
+% compila o indice
+% ---
+\makeindex
+% ---
+
+% ----
+% Início do documento
+% ----
+\begin{document}
+
+% Seleciona o idioma do documento (conforme pacotes do babel)
+%\selectlanguage{english}
+\selectlanguage{brazil}
+
+% Retira espaço extra obsoleto entre as frases.
+\frenchspacing 
+
+% ----------------------------------------------------------
+% ELEMENTOS PRÉ-TEXTUAIS
+% ----------------------------------------------------------
+% \pretextual
+
+% ---
+% Capa
+% ---
+\imprimircapa
+% ---
+
+% ---
+% Folha de rosto
+% (o * indica que haverá a ficha bibliográfica)
+% ---
+\imprimirfolhaderosto*
+% ---
+
+% ---
+% Inserir a ficha bibliografica
+% ---
+
+% Isto é um exemplo de Ficha Catalográfica, ou ``Dados internacionais de
+% catalogação-na-publicação''. Você pode utilizar este modelo como referência. 
+% Porém, provavelmente a biblioteca da sua universidade lhe fornecerá um PDF
+% com a ficha catalográfica definitiva após a defesa do trabalho. Quando estiver
+% com o documento, salve-o como PDF no diretório do seu projeto e substitua todo
+% o conteúdo de implementação deste arquivo pelo comando abaixo:
+%
+% \begin{fichacatalografica}
+%     \includepdf{fig_ficha_catalografica.pdf}
+% \end{fichacatalografica}
+
+\begin{fichacatalografica}
+	\sffamily
+	\vspace*{\fill}					% Posição vertical
+	\begin{center}					% Minipage Centralizado
+	\fbox{\begin{minipage}[c][8cm]{13.5cm}		% Largura
+	\small
+	\imprimirautor
+	%Sobrenome, Nome do autor
+	
+	\hspace{0.5cm} \imprimirtitulo  / \imprimirautor. --
+	\imprimirlocal, \imprimirdata-
+	
+	\hspace{0.5cm} \pageref{LastPage} p. : il. (algumas color.) ; 30 cm.\\
+	
+	\hspace{0.5cm} \imprimirorientadorRotulo~\imprimirorientador\\
+	
+	\hspace{0.5cm}
+	\parbox[t]{\textwidth}{\imprimirtipotrabalho~--~\imprimirinstituicao,
+	\imprimirdata.}\\
+	
+	\hspace{0.5cm}
+		1. Palavra-chave1.
+		2. Palavra-chave2.
+		2. Palavra-chave3.
+		I. Orientador.
+		II. Universidade xxx.
+		III. Faculdade de xxx.
+		IV. Título 			
+	\end{minipage}}
+	\end{center}
+\end{fichacatalografica}
+% ---
+
+% ---
+% Inserir errata
+% ---
+% SEM ERRATA AQUI MEU AMIGO
+% ---
+
+% ---
+% Inserir folha de aprovação
+% ---
+
+% Isto é um exemplo de Folha de aprovação, elemento obrigatório da NBR
+% 14724/2011 (seção 4.2.1.3). Você pode utilizar este modelo até a aprovação
+% do trabalho. Após isso, substitua todo o conteúdo deste arquivo por uma
+% imagem da página assinada pela banca com o comando abaixo:
+%
+% \includepdf{folhadeaprovacao_final.pdf}
+%
+\begin{folhadeaprovacao}
+
+  \begin{center}
+    {\ABNTEXchapterfont\large\imprimirautor}
+
+    \vspace*{\fill}\vspace*{\fill}
+    \begin{center}
+      \ABNTEXchapterfont\bfseries\Large\imprimirtitulo
+    \end{center}
+    \vspace*{\fill}
+    
+    \hspace{.45\textwidth}
+    \begin{minipage}{.5\textwidth}
+        \imprimirpreambulo
+    \end{minipage}%
+    \vspace*{\fill}
+   \end{center}
+        
+   Trabalho aprovado. \imprimirlocal, 24 de novembro de 2012:
+
+   \assinatura{\textbf{\imprimirorientador} \\ Orientador} 
+   \assinatura{\textbf{\imprimircoorientador} \\ Coorientador}
+   \assinatura{\textbf{Professor} \\ Convidado}
+   %\assinatura{\textbf{Professor} \\ Convidado 3}
+   %\assinatura{\textbf{Professor} \\ Convidado 4}
+      
+   \begin{center}
+    \vspace*{0.5cm}
+    {\large\imprimirlocal}
+    \par
+    {\large\imprimirdata}
+    \vspace*{1cm}
+  \end{center}
+  
+\end{folhadeaprovacao}
+% ---
+
+% ---
+% Dedicatória
+% ---
+\begin{dedicatoria}
+   \vspace*{\fill}
+   \centering
+   \noindent
+   \textit{ Este trabalho é dedicado aos meus pais, que possibilitaram a conclusão desse curso.} \vspace*{\fill}
+\end{dedicatoria}
+% ---
+
+% ---
+% Agradecimentos
+% ---
+\begin{agradecimentos}
+
+Meus agradecimentos ao meu orientador Edson Satoshi Gomi e meu coorientador Bruno Carvalho Albertini pelo direcionamento ao longo do projeto e ao professor Carl Haber por ter fornecido as imagens necessárias para o teste do projeto.
+
+\end{agradecimentos}
+% ---
+
+% ---
+% Epígrafe
+% ---
+% SEM EPIGRAFE TAMBÉM
+% ---
+
+% ---
+% RESUMOS
+% ---
+
+% resumo em português
+\setlength{\absparsep}{18pt} % ajusta o espaçamento dos parágrafos do resumo
+\begin{resumo}
+	A mídia fonográfica era a única maneira de armazenamento de sons até a introdução da fita magnética no começo dos anos 50. Há, portanto, uma vasta quantidade de discos gravados ainda hoje, indo de discos produzidos em larga escala a discos gravados em corte direto, que são cópias únicas. Muitos destes discos estão em estado delicado de deterioração onde ler o disco com uma agulha de toca-discos poderia danificar irreversívelmente o material. \\
+	Tendo em mente preservar o material armazenado nessas mídias, surge a necessidade de realizar a digitalização desses meios. Existem diversas técnicas de digitalização que podem ser aplicadas às mídias fonográficas, porém, dadas as condições em que se encontram muitos discos, seria necessário um método que não tivesse contato mecânico com o disco, para evitar maiores desgastes nas informação. Partindo dessa ideia, surgiu o projeto VisualAudio (2006), que criou um método de processamento visual para extração dos dados dessas mídias fonográficas. Esse trabalho é baseado nesse projeto e busca realizar a extração do áudio da imagem de um anel de um vinil 78 RPM.
+
+ \textbf{Palavras-chave}: Digitalização. Áudio. vinil.
+\end{resumo}
+
+% resumo em inglês
+\begin{resumo}[Abstract]
+ \begin{otherlanguage*}{english}
+   You have to put the abstract here sometime.
+
+   \vspace{\onelineskip}
+ 
+   \noindent 
+   \textbf{Keywords}: latex. abntex. text editoration.
+ \end{otherlanguage*}
+\end{resumo}
+
+% resumo em francês 
+
+% resumo em espanhol
+
+% ---
+
+% ---
+% inserir lista de ilustrações
+% ---
+\pdfbookmark[0]{\listfigurename}{lof}
+\listoffigures*
+\cleardoublepage
+% ---
+
+% ---
+% inserir lista de tabelas
+% ---
+\pdfbookmark[0]{\listtablename}{lot}
+\listoftables*
+\cleardoublepage
+% ---
+
+% ---
+% inserir lista de abreviaturas e siglas
+% ---
+\begin{siglas}
+  \item[SNR] Signal to Noise Ration
+  \item[THD] Total Harmonic Distortion
+  \item[STD] Standard Deviation
+\end{siglas}
+% ---
+
+% ---
+% inserir lista de símbolos
+% ---
+\begin{simbolos}
+  \item[$ \Gamma $] Letra grega Gama
+  \item[$ \Lambda $] Lambda
+  \item[$ \zeta $] Letra grega minúscula zeta
+  \item[$ \in $] Pertence
+\end{simbolos}
+% ---
+
+% ---
+% inserir o sumario
+% ---
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+% ---
+
+
+
+% ----------------------------------------------------------
+% ELEMENTOS TEXTUAIS
+% ----------------------------------------------------------
+\textual
+
+% ----------------------------------------------------------
+% Introdução (exemplo de capítulo sem numeração, mas presente no Sumário)
+% ----------------------------------------------------------
+\chapter*[Introdução]{Introdução}
+\addcontentsline{toc}{chapter}{Introdução}
+% ----------------------------------------------------------
+
+Este documento e seu código-fonte são exemplos de referência de uso da classe
+\textsf{abntex2} e do pacote \textsf{abntex2cite}. O documento 
+exemplifica a elaboração de trabalho acadêmico (tese, dissertação e outros do
+gênero) produzido conforme a ABNT NBR 14724:2011 \emph{Informação e documentação
+- Trabalhos acadêmicos - Apresentação}.
+
+A expressão ``Modelo Canônico'' é utilizada para indicar que \abnTeX\ não é
+modelo específico de nenhuma universidade ou instituição, mas que implementa tão
+somente os requisitos das normas da ABNT. Uma lista completa das normas
+observadas pelo \abnTeX\ é apresentada em \citeonline{abntex2classe}.
+
+Sinta-se convidado a participar do projeto \abnTeX! Acesse o site do projeto em
+\url{http://www.abntex.net.br/}. Também fique livre para conhecer,
+estudar, alterar e redistribuir o trabalho do \abnTeX, desde que os arquivos
+modificados tenham seus nomes alterados e que os créditos sejam dados aos
+autores originais, nos termos da ``The \LaTeX\ Project Public
+License''\footnote{\url{http://www.latex-project.org/lppl.txt}}.
+
+Encorajamos que sejam realizadas customizações específicas deste exemplo para
+universidades e outras instituições --- como capas, folha de aprovação, etc.
+Porém, recomendamos que ao invés de se alterar diretamente os arquivos do
+\abnTeX, distribua-se arquivos com as respectivas customizações.
+Isso permite que futuras versões do \abnTeX~não se tornem automaticamente
+incompatíveis com as customizações promovidas. Consulte
+\citeonline{abntex2-wiki-como-customizar} par mais informações.
+
+Este documento deve ser utilizado como complemento dos manuais do \abnTeX\ 
+\cite{abntex2classe,abntex2cite,abntex2cite-alf} e da classe \textsf{memoir}
+\cite{memoir}. 
+
+Esperamos, sinceramente, que o \abnTeX\ aprimore a qualidade do trabalho que
+você produzirá, de modo que o principal esforço seja concentrado no principal:
+na contribuição científica.
+
+Equipe \abnTeX 
+
+Lauro César Araujo
+
+% ----------------------------------------------------------
+% PARTE
+% ----------------------------------------------------------
+\part{Referenciais teóricos}
+% ----------------------------------------------------------
+
+% ---
+% Capitulo com exemplos de comandos inseridos de arquivo externo 
+% ---
+\include{abntex2-modelo-include-comandos}
+% ---
+
+% ----------------------------------------------------------
+% PARTE
+% ----------------------------------------------------------
+\part{Descrição do processo de digitalização}
+% ----------------------------------------------------------
+
+% ---
+% Capitulo de revisão de literatura
+% ---
+\chapter{Visão geral do processo}
+% ---
+
+O processo de digitalização da imagem de um vinil utilizada nesse trabalho pode ser dividida em 3 partes:\\
+
+\begin{enumerate}
+\item Obtenção das imagens
+\item Processamento das imagens
+\item Exportação do áudio.
+\end{enumerate}
+
+
+
+% ---
+\section{Obtenção de imagens}
+% ---
+Essa parte do processo é a única que não faz parte do escopo deste trabalho. A obtenção de imagens digitais apropriadas de um disco fonográfico requer equipamento especializado e poderia ser tema de um trabalho de conclusão de curso por si só.\\
+A imagens de entrada para o software devem cumprir os seguintes requisitos
+\begin{itemize}	
+\item Devem ser fornecidas em série as imagens equivalentes à um anel do disco.
+\item Imagem descomprimida em preto e branco. 
+\item Resolução???
+\item Iluminação na imagem do vinil deve ser próxima de uniforme.
+\item A FAZERRRRRRRR
+\end{itemize}
+
+
+% ---
+\section{Processamento de imagens}
+% ---
+O processamento de imagem é parte integrante das funções do software que será desenvolvido por esse projeto. Esse processamento cumpre os seguintes objetivos:
+\begin{enumerate}
+\item Reconhecer os segmentos de trilha do disco na imagem.
+\item Amostrar esses segmentos.
+\item Reconhecer e lidar com pontos de trilha indefinidos.
+\item Unir os segmentos da trilha formando um segmento único correspondente ao anel usado de entrada para o programa.
+\end{enumerate}
+
+% ---
+\section{Exportação do áudio}
+% ---
+Ao chegar nesta etapa, devemos ter uma estrutura de dados no programa correspondendo a um segmento de trilha arbitrário, sendo correspondente à um anel ou a todo o disco. Os objetivos desta etapa são:
+\begin{enumerate}
+\item Obter áudio à partir da sequência de amostras recebida.
+\item Equalizar sequência de áudio.
+\item Exportar um arquivo WAVE.
+\end{enumerate}
+
+
+
+% ---
+\chapter{Obtenção das imagens}
+% ---
+
+% ---
+\chapter{Processamento de imagens}
+% ---
+O pseudo-código do algoritmo que será aplicado às imagens pode ser resumido da seguinte maneira:
+
+\begin{itemize}
+
+\item Inicializar traços
+\item Para cada anel
+	\begin{itemize}
+    \item Para cada linha
+    \begin{itemize}
+        \item Detecção Grosseira: localização aproximada
+        \item Detecção refinada: Detecta os candidatos a ponto de borda
+        \item Para cada traço
+        \begin{itemize}
+        	\item Selecionar os candidatos que se encaixam melhor no traço
+		\end{itemize}
+	\end{itemize}
+    \item Reconstrução de trilha ao longo do anel
+	\end{itemize}
+\item Reconstrução de trilha ao longo do disco
+\end{itemize}
+
+Etapa dividida em:
+\begin{itemize}
+\item Acompanhamento de traço
+\item Detecção grosseira de bordas
+\item Detecção refinada de bordas
+\end{itemize}
+
+\section{Detecção grosseira de bordas} \label{sec:detec_grosseira}
+O algoritmo apresentado aqui é aplicado linha a linha da imagem adquirida, sendo cada linha correspondente a uma fatia de tempo. Cada linha é representada por uma sequência L de valores de cinza.
+
+O objetivo dessa etapa é detectar traços grosseiramente em uma imagem suave sem ruído.
+Desse modo obtemos a presença de todos traços e conseguimos uma localização aproximada de todas bordas. Com esses locais temos uma estimativa da amplitude de degrau A e valor base B (segundo modelo de {4.6}), mesmo em casos de alta variação de iluminação.
+Essa etapa evita detecção de alguns pontos inválidos (induzidos por particulado ou danos) pois localiza apenas objetos com tamanho desejado.
+
+A detecção é implementada através de uma convolução com um double box filter b(x) definido por um kernel $\lambda$ x 1:
+
+	\begin{equation}
+	 b = [-1 \dots{} -1 0 1 \dots{} 1]
+	\end{equation}
+
+Como a largura w da trilha e do traço são praticamente constantes, a escala do filtro é definida por:
+
+\begin{equation}
+    \lambda = \alpha*w
+\end{equation}
+
+com $\alpha$ entre 0.2 e 0.8 geralmente.
+A região entre dois extremos (do resultado da convolução) localiza um traço ou uma área escura.
+
+%TODO NSERIR IMAGEM
+
+Dai podemos obter a amplitude A e o valor base B tirando, respectivamente, o valor máximo e o mínimo em cada uma dessas regiões.
+Outra maneira de detectar aproximadamente os traços seria iniciar o processo descrito acima no inicio do processamento e propagar essa informação na direção tangencial pelo tempo usando as bordas detectadas do tempo i para obter as bordas do tempo i+1, porém esse método também propaga erros e gera um resultado final ruim, principalmente em discos muito danificados.
+
+\section{Detecção refinada de bordas}\label{sec:detec_fina}
+Uma das restrições apresentadas pelo modelo é detectar a posição da borda relativa a amplitude do degrau local A e o valor base B (determinados anteriormente) para manter as bordas simétricas. O método mais simples para realizar isso é definir um limiar adaptivo $\tau$ definido a seguir:
+
+\begin{equation}
+\tau = \beta(A - B) + B, \beta \in [0,1]
+\end{equation}
+
+\begin{figure}[hbtp]
+\centering
+\includegraphics[scale=0.40]{imagens/fine_edge_detection.png}
+\caption{Detecção de borda por limiar local:  os limiares locais $\tau_{i}$ são determinados por uma combinação linear das amplitudes $A_{i}$ e valores de base $B_{i}$ (linhas tracejadas)}
+\end{figure}
+
+Um limiar é aplicado à uma sequência L correspondente à uma linha adquidira. A precisão subpixel é adquirida obtendo o valor da interpolação entre $L(i)$ e $L(i+1)$ que satisfazem:
+
+%TODO ARrumar esse lixo
+
+\begin{align}
+\begin{split}
+&L(i) \geq \tau \textrm{ e } L(i+1) < \tau 
+\textrm{ para bordas de descida ou} \\
+&L(i) < \tau \textrm{  e  } L(i+1) \geq \tau 
+\textrm{ para bordas de subida.}
+\end{split}
+\end{align}
+
+% ---
+\section{Acompanhamento de traço}
+% ---
+Esse trecho do processamento irá definir o formato dos segmentos de trilha.  
+Podemos dividir este processo nas seguintes partes:
+\begin{enumerate}
+\item Inicializar traços $T_i$.
+\item Definir estimativas para cada borda do traço $T_i$, $\estimr$ e $\estimf$.
+\item Definir o alcance de tolerância $m$ para cada estimativa de borda.
+\item Escolher o melhor candidato dentro do intervalo de tolerância.
+\item Incrementar $j$ e voltar ao passo 2.
+\end{enumerate}
+
+%TODO INSERIR IMAGEM
+
+\subsection{Inicializar traços}
+Os traços são inicializados a partir da primeira e da última imagem do anel. Tomam-se as $n$ primeiras linhas da primeira imagem e as $n$ últimas linhas da última imagem para calcular uma média ponto a ponto, com $n$ podendo variar entre 5 e 30, dependendo da velocidade de rotação do disco, frequência de amostra da imagem e grau de degradação da imagem. O resultado da média dessas linhas é a sequência de pontos $J$ que apresentará um perfil suavizado das trilhas no começo do anel. Essa sequência $J$ agora é posta sob os processos de detecção de borda das seções \ref{sec:detec_grosseira} e \ref{sec:detec_fina} de onde obteremos as estimativas de candidatos a borda. Estes candidatos são as estimativas $\estimr$ e $\estimf$ de cada traço.
+
+\subsection{Posições estimadas}
+As estimativas $\estimr$ e $\estimf$ são usadas para se ter uma idéia da posição de cada traço, mesmo quando o disco apresenta degradações relevantes e o traço não é visivel ou está fora do lugar.
+
+Como o deslocamento radial das trilhas demonstram apenas variações suaves de uma linha para a próxima, os candidatos $\estimr$ e $\estimf$ de cada traço Ti são obtidos com base nos canditados escolhidos do tempo j-1:
+
+\begin{align}\begin{split}
+	\estimr &= \func{r}{i}{j-1} \\
+    \estimf &= \func{f}{i}{j-1}
+\end{split}\end{align}
+   	
+Se a borda do tempo j-1 não pode ser extraida ela é marcada como indefinida, nesse caso:
+
+ 
+\begin{align}\begin{split}
+	\estimr &= \func{r}{i}{j-1} + d \\
+    \estimf &= \func{f}{i}{j-1} + d
+\end{split}\end{align}
+
+
+
+onde d, que é definido por:
+\begin{enumerate}
+\item Deslocamento da outra borda do mesmo traço, se não for indefinida.
+\item Deslocamento das bordas do outro traço da mesma trilha (caso 78 rpm), se não forem indefinidas.
+\item Média dos deslocamentos de todos outros traços da imagem.
+
+\end{enumerate}
+    
+A média dos deslocamentos dos outros traços vai resultar numa aproximação dos componentes de baixa frequência no sinal, causados pela espiral da trilha e a descentralização do eixo do disco no momento de captura da imagem.
+
+\subsection{Definição do alcance $m$}
+O objetivo dessa tolerância $m$ é separar traços e impedir sobreposição (entre bordas de subida ou entre bordas de descida) em casos de degradação.
+Outro propósito também é um primeiro processo de tratamento de ruído.
+
+
+\begin{align}
+\func{m}{min,r,i}{j} &= \estimr - p
+\textrm{ e }
+\func{m}{max,r,i}{j} = \estimr + p \\
+\func{m}{min,f,i}{j} &= \estimf - p
+\textrm{ e }
+\func{m}{max,f,i}{j} = \estimf + p
+\end{align}
+
+onde p é a tolerancia e costuma variar entre 10 e 20 $\mu m$.
+
+No caso do range $m$ de uma trilha sobrepor o candidato a borda de outra trilha, o valor de $m$ deve ser reajustado da seguinte maneira:
+
+
+\begin{align}
+\textrm{Se }
+\func{m}{min,r,i+1}{j} &< \estimf
+\textrm{ então }
+\func{m}{min,r,i+1}{j} = \estimf \\
+\textrm{Se }
+\func{m}{max,f,i}{j} &> \funchat{r}{i+1}{j}
+\textrm{ então }
+\func{m}{max,f,i}{j} = \funchat{r}{i+1}{j}
+\end{align}
+
+%TODO Inserir imagem
+
+\subsection{Seleção de candidatos}
+As posições de borda $\func{r}{i}{j}$ e $\func{f}{i}{j}$ são escolhidas como melhores candidatas dentro do alcance $m$ definido em volta das estimativas $\estimr$ e $\estimf$.
+Existem 3 possibilidades no caso da avaliação de $\estimr$ e são:
+\begin{itemize}
+\item Caso não haja candidato escolhido, $\func{r}{i}{j}$ é marcado como indefinido e é resolvido em etapa posterior.
+\item Se houver apenas um candidato $\func{cr}{k}{i}$ esse é usado para definir a borda
+\begin{equation}
+\func{r}{i}{j} = \func{cr}{k}{i}.
+\end{equation}
+\item Se houverem vários candidatos, é escolhido o candidato $\func{cr}{k}{i}$ retorna o menor valor possível para a operação:
+\begin{equation}
+ | \estimr - \func{cr}{k}{i} |
+\end{equation}
+\end{itemize}
+    
+
+A escolha de $\func{f}{i}{j}$ é basicamente igual à de $\func{r}{i}{j}$. Devido aos métodos utilizados e ao grau de desfocagem, na maior parte do tempo há apenas um candidato à borda dentro do alcance m. Porém, há a possibilidade de degradações no disco, que produzem outros candidatos. Nesses casos, a média de largura $\funcbar{w}{i}{j}$ do traço i no tempo j pode ser usado para testar a validade da escolha. Duas condições são estimadas para essa avaliação:
+
+\begin{align}
+| \estimf - \func{r}{i}{j} - \funcbar{w}{i}{j}| &>
+| \estimf - \func{cr}{k}{i} - \funcbar{w}{i}{j}|
+\\
+| \func{f}{i}{j} - \estimr - \funcbar{w}{i}{j}| &>
+| \func{cf}{k}{i} - \estimr - \funcbar{w}{i}{j}|
+\end{align}
+
+O que essas equações estão fazendo (tomando a primeira como exemplo) é comparar a distância entre o ponto escolhido (no caso $\func{r}{i}{j}$) e o ponto de estimativa da outra borda do traço ($\estimf$) com o tamanho da média de largura $\funcbar{w}{i}{j}$. Essa comparação é feita com outros candidatos no lado direito da inequação e, se algum candidato gerar uma distância melhor (mais próxima de $\funcbar{w}{i}{j}$), esse ponto deve ser marcado como indefinido e um processo de análise na direção descrescente de j marcará os pontos necessários como indefinidos também. A primeira equação avalia os candidatos de borda de subida e a outra os de descida.
+
+Se ambas condições forem verdade, quer dizer que é difícil tomar uma decisão no tempo j. Assim, os candidatos são mantidos e uma análise será realizada posteriormente através do processo reverso.
+Esse processo segue os seguintes passos:
+\begin{enumerate}
+\item Alterar o ponto escolhido para indefinido.
+\item decrementar j.
+\item Calcular a largura no tempo j : $\func{w}{i}{j} = |\func{f}{i}{j} - \func{r}{i}{j}|$
+\item Se $|\funcbar{w}{i}{j} - \func{w}{i}{j} | > \zeta$ então voltar ao passo 1.
+
+Como a largura pode sofrer variações importantes, $\zeta$ não pode ser muito rígido: um valor de 5\% e 10\% geralmente gera resultados satisfatórios.
+A média $\funcbar{w}{i}{j}$ é atualizada a cada tempo j para seguir as variações suaves de largura de cada circunvolução:
+
+\begin{equation}
+\funcbar{w}{i}{j} = \varsigma\cdot( \estimf - \estimr ) + (1 - \varsigma) \cdot \funcbar{w}{i}{j-1}
+\end{equation}
+
+com $\varsigma$ sendo bem próximo de 0, e.g. $\varsigma = \frac{1}{1000}$ ou menor. Como todos traços fazem parte da mesma trilha (uma trilha só que percorre o disco em espiral, o que vemos nas imagens são segmentos dessa trilha), a largura média do traço, que agora é definida pra cada trecho, pode ser substituída por 2 médias (ja que vinis de 78 rpm tem 2 traços por trilha) para a trilha completa: 1 para traços internos e outra para traços externos.
+
+\end{enumerate}
+
+
+
+% ---
+\chapter{Exportação do áudio}
+% ---
+
+
+
+% ----------------------------------------------------------
+% PARTE
+% ----------------------------------------------------------
+\part{Resultados}
+% ----------------------------------------------------------
+
+% ---
+% primeiro capitulo de Resultados
+% ---
+\chapter{Lectus lobortis condimentum}
+% ---
+
+% ---
+\section{Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
+posuere cubilia Curae}
+% ---
+
+\lipsum[21-22]
+
+% ---
+% segundo capitulo de Resultados
+% ---
+\chapter{Nam sed tellus sit amet lectus urna ullamcorper tristique interdum
+elementum}
+% ---
+
+% ---
+\section{Pellentesque sit amet pede ac sem eleifend consectetuer}
+% ---
+
+\lipsum[24]
+
+% ----------------------------------------------------------
+% Finaliza a parte no bookmark do PDF
+% para que se inicie o bookmark na raiz
+% e adiciona espaço de parte no Sumário
+% ----------------------------------------------------------
+\phantompart
+
+% ---
+% Conclusão
+% ---
+\chapter{Conclusão}
+% ---
+
+\lipsum[31-33]
+
+% ----------------------------------------------------------
+% ELEMENTOS PÓS-TEXTUAIS
+% ----------------------------------------------------------
+\postextual
+% ----------------------------------------------------------
+
+% ----------------------------------------------------------
+% Referências bibliográficas
+% ----------------------------------------------------------
+\bibliography{abntex2-modelo-references}
+
+% ----------------------------------------------------------
+% Glossário
+% ----------------------------------------------------------
+%
+% Consulte o manual da classe abntex2 para orientações sobre o glossário.
+%
+%\glossary
+
+% ----------------------------------------------------------
+% Apêndices
+% ----------------------------------------------------------
+
+% ---
+% Inicia os apêndices
+% ---
+\begin{apendicesenv}
+
+% Imprime uma página indicando o início dos apêndices
+\partapendices
+
+% ----------------------------------------------------------
+\chapter{Quisque libero justo}
+% ----------------------------------------------------------
+
+\lipsum[50]
+
+% ----------------------------------------------------------
+\chapter{Nullam elementum urna vel imperdiet sodales elit ipsum pharetra ligula
+ac pretium ante justo a nulla curabitur tristique arcu eu metus}
+% ----------------------------------------------------------
+\lipsum[55-57]
+
+\end{apendicesenv}
+% ---
+
+
+% ----------------------------------------------------------
+% Anexos
+% ----------------------------------------------------------
+
+% ---
+% Inicia os anexos
+% ---
+\begin{anexosenv}
+
+% Imprime uma página indicando o início dos anexos
+\partanexos
+
+% ---
+\chapter{Morbi ultrices rutrum lorem.}
+% ---
+\lipsum[30]
+
+% ---
+\chapter{Cras non urna sed feugiat cum sociis natoque penatibus et magnis dis
+parturient montes nascetur ridiculus mus}
+% ---
+
+\lipsum[31]
+
+% ---
+\chapter{Fusce facilisis lacinia dui}
+% ---
+
+\lipsum[32]
+
+\end{anexosenv}
+
+%---------------------------------------------------------------------
+% INDICE REMISSIVO
+%---------------------------------------------------------------------
+\phantompart
+\printindex
+%---------------------------------------------------------------------
+
+\end{document}

@@ -2,6 +2,34 @@
 
 Mat* g_temp_mat;
 int g_idx_col;
+bool debug_paint = true;
+
+void draw_pixel(int x, int y, unsigned char red, unsigned char green, unsigned char blue)
+{
+    if(debug_paint)
+    {
+        g_temp_mat->col(x).at<Vec3b>(y)[0] = blue;
+        g_temp_mat->col(x).at<Vec3b>(y)[1] = green;
+        g_temp_mat->col(x).at<Vec3b>(y)[2] = red;
+    }
+}
+
+void draw_red(int x, int y)
+{
+    if(debug_paint)
+        g_temp_mat->col(x).at<Vec3b>(y)[2] = 255;
+}
+void draw_green(int x, int y)
+{
+    if(debug_paint)
+        g_temp_mat->col(x).at<Vec3b>(y)[1] = 255;
+}
+void draw_blue(int x, int y)
+{
+    if(debug_paint)
+        g_temp_mat->col(x).at<Vec3b>(y)[0] = 255;
+}
+
 
 int find_min(const Mat& mat_col, int idx_begin, int length_sweep)
 {
@@ -128,14 +156,16 @@ vector<Candidate> get_edge_candidates(const Mat& mat_src_col, const Mat& mat_dy_
         // if its about 0 and its bigger than the threshold, its marked.
         if(delta1 * delta2 <= 0 && fabs(mat_dy_col.at<float>(i+2)) > threshold )
         {
-            Candidate temp = {
-                                (double)i+2,
-                                0, // val_left
-                                mat_src_col.at<unsigned char>(i+2), //val_position
-                                0, // val_right
-                                (mat_dy_col.at<float>(i+2) > 0) // 0 if fall edge, 1 if rising edge
-                            };
+            Candidate temp;
+
+            temp.position = (double)i+2;
+            temp.val_left = 0;
+            temp.val_position = mat_src_col.at<unsigned char>(i+2);
+            temp.val_right = 0;
+            temp.fall_rise = (mat_dy_col.at<float>(i+2) > 0);
+
             pts_candidate.push_back(temp);
+
             i += 3;
         }
     }
@@ -235,12 +265,13 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
 
         double pos_new_edge;
 
-        if(pts_candidate[i].val_left < pts_candidate[i].val_right)
+        if(pts_candidate[i].val_left < pts_candidate[i].val_right) // if its a rise edge
         {
             // val_right is A, val_left is B
+            // hence v = t*(A-B) + B
             val_edge = threshold*fabs(pts_candidate[i].val_right - pts_candidate[i].val_left) + pts_candidate[i].val_left;
 
-            if(val_edge < pts_candidate[i].val_position)
+            if(val_edge < pts_candidate[i].val_position) // edge canditate is at val_position's left
             {
                 int k = (int)row_edge;
                 while(mat_src_col.at<unsigned char>(k) > val_edge)
@@ -272,7 +303,7 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
 
             }
         }
-        else
+        else //if its a fall edge
         {
             val_edge = threshold*(pts_candidate[i].val_left - pts_candidate[i].val_right) + pts_candidate[i].val_right;
 
@@ -303,6 +334,10 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
 
             }
         }
+
+        // pts_candidate[i].position = pos_new_edge;////// Quando descomento isso o perfil da trilha e a borda encontrada ficam estranhos
+
+        draw_blue(g_idx_col ,pos_new_edge);
     }
 }
 
@@ -358,60 +393,45 @@ vector<Trace> initialize_traces(const Mat& mat_ring_first, const Mat& mat_ring_l
         double distance = pts_candidate[i+1].position - pts_candidate[i].position; // distance between edges
         profile_sections.push_back(distance);
         if(
-            distance < 30 // distance between edges of about 20 groove bottom
+            distance < 50 // threshold distance between edges of groove bottom
             && i > 1 // i > 1 means that, supposedly, the 1st section is a trace
             && i < pts_candidate.size() - 2 // means that its not the last section
             )
         {
-            vector<double> pts_rise1;
-            vector<double> pts_fall1;
-
             Trace temp1;
-            temp1.pts_rise_edge = pts_rise1;
-            temp1.pts_fall_edge = pts_fall1;
             temp1.pos_estimated_rise = (double) pts_candidate[i-1].position;
             temp1.pos_estimated_fall = (double) pts_candidate[i].position;
-            temp1.tolerance = 0;
-            temp1.trace_width = 0;
 
             traces.push_back(temp1);
 
-            vector<double> pts_rise2;
-            vector<double> pts_fall2;
-
             Trace temp2;
-            temp2.pts_rise_edge = pts_rise2;
-            temp2.pts_fall_edge = pts_fall2;
             temp2.pos_estimated_rise = (double) pts_candidate[i+1].position;
             temp2.pos_estimated_fall = (double) pts_candidate[i+2].position;
-            temp2.tolerance = 0;
-            temp2.trace_width = 0;
 
             traces.push_back(temp2);
+
         }
     }
 
-
-    cerrln(pts_candidate.size());
+    cerrv(pts_candidate.size());
+    cerrv(traces.size());
 
     double median_width = get_median(profile_sections);
 
     for (int i = 0; i < traces.size(); ++i)
     {
-        traces[i].trace_width = median_width;
+        traces[i].mean_trace_width.push_back(median_width);
     }
 
     return traces;
 }
 
-double closest_to_estimation(vector<Candidate> pts_candidate, double estimated_edge, double tolerance_min, double tolerance_max)
+vector<double> in_range_candidates(vector<Candidate> pts_candidate, double estimated_edge, double tolerance_min, double tolerance_max)
 {
-    double result;
     vector<double> possible_candidates;
     for (int i = 0; i < pts_candidate.size(); ++i)
     {
         double candidate = pts_candidate[i].position;
-        g_temp_mat->col(g_idx_col).at<Vec3b>((int)candidate)[0] = 255;
         if(tolerance_min <= candidate && candidate <= tolerance_max)
         {
             possible_candidates.push_back(candidate);
@@ -421,6 +441,13 @@ double closest_to_estimation(vector<Candidate> pts_candidate, double estimated_e
             break;
         }
     }
+
+    return possible_candidates;
+}
+
+double closest_to_estimation(vector<double> possible_candidates, double estimated_edge)
+{
+    double result;
 
     if(possible_candidates.size() == 0)
     {
@@ -436,7 +463,7 @@ double closest_to_estimation(vector<Candidate> pts_candidate, double estimated_e
         int idx_choosen = 0;
         for (int k = 0; k < possible_candidates.size(); ++k)
         {
-            g_temp_mat->col(g_idx_col).at<Vec3b>((int)possible_candidates[k])[2] = 255;
+            // draw_pixel(g_idx_col, possible_candidates[k], 255, 0, 0);
 
             if(min > fabs(possible_candidates[k] - estimated_edge))
             {
@@ -450,18 +477,145 @@ double closest_to_estimation(vector<Candidate> pts_candidate, double estimated_e
     return result;
 }
 
+double estimated_displacement(vector<Trace> traces, int idx_trace, int col, bool fall_rise)
+{
+    double displacement;
+    if(col > 0)
+    {
+        if(fall_rise = false && traces[idx_trace].pts_rise_edge[col] > 0 && traces[idx_trace].pts_rise_edge[col-1] > 0) // check displacement on same trace, other edge
+        {
+            displacement = traces[idx_trace].pts_rise_edge[col] - traces[idx_trace].pts_rise_edge[col-1];
+        }
+        else if(fall_rise = true && traces[idx_trace].pts_fall_edge[col] > 0 && traces[idx_trace].pts_fall_edge[col-1] > 0) // check displacement on same trace, other edge
+        {
+            displacement = traces[idx_trace].pts_fall_edge[col] - traces[idx_trace].pts_fall_edge[col-1];
+        }
+          // same groove, other trace. If idx_trace is even, other trace in the groove is idx_trace+1, otherwise it is idx_trace-1.
+        else if( idx_trace % 2 == 0 && traces[idx_trace+1].pts_rise_edge[col] > 0 && traces[idx_trace+1].pts_rise_edge[col-1] > 0) // other rise edge
+        {
+            displacement = traces[idx_trace+1].pts_rise_edge[col] - traces[idx_trace+1].pts_rise_edge[col-1];
+        }
+        else if( idx_trace % 2 == 0 && traces[idx_trace+1].pts_fall_edge[col] > 0 && traces[idx_trace+1].pts_fall_edge[col-1] > 0)
+        {
+            displacement = traces[idx_trace+1].pts_fall_edge[col] - traces[idx_trace+1].pts_fall_edge[col-1];
+        }
+        else if( idx_trace % 2 != 0 && traces[idx_trace-1].pts_rise_edge[col] > 0 && traces[idx_trace-1].pts_rise_edge[col-1] > 0)
+        {
+            displacement = traces[idx_trace-1].pts_rise_edge[col] - traces[idx_trace-1].pts_rise_edge[col-1];
+        }
+        else if( idx_trace % 2 != 0 && traces[idx_trace-1].pts_fall_edge[col] > 0 && traces[idx_trace-1].pts_fall_edge[col-1] > 0) // check displacement on same trace, other edge
+        {
+            displacement = traces[idx_trace-1].pts_fall_edge[col] - traces[idx_trace-1].pts_fall_edge[col-1];
+        }
+        else
+        {
+            double mean_displacement = 0;
+            int mean_counter = 0;
+            for (int l = 0; l < traces.size(); ++l)
+            {
+                if(traces[l].pts_rise_edge[col] > 0 // if this edge point is defined
+                    && traces[l].pts_rise_edge[col-1] > 0) // if last one is defined
+                {
+                    mean_displacement += traces[l].pts_rise_edge[col] - traces[l].pts_rise_edge[col-1];
+                    mean_counter++;
+                }
+                if(traces[l].pts_fall_edge[col] > 0
+                    && traces[l].pts_fall_edge[col-1] > 0)
+                {
+                    mean_displacement += traces[l].pts_fall_edge[col] - traces[l].pts_fall_edge[col-1];
+                    mean_counter++;
+                }
+            }
+
+
+            cerrv(mean_displacement)
+            cerrv(mean_counter)
+
+            displacement = mean_displacement/mean_counter;
+        }
+
+    }
+    else
+    {
+        displacement = 0;
+    }
+
+    if(col == 69 && (int)traces[idx_trace].pos_estimated_fall == 2121) //temp
+    {
+        cerrv(displacement);
+    }
+
+    return displacement;
+}
+
+void backtracking(Trace trace, /*Trace*/
+                bool rise_or_fall, /*rise - 0, fall - 1*/
+                int starting_col /*first column in backtracking process*/)
+{
+    const float zeta = 0.05; /* % of mean width*/
+    int j = starting_col;
+    bool backtracking = true;
+
+        while(backtracking && j >= 0)
+        {
+            if(!rise_or_fall) /*rise*/
+            {
+                trace.pts_rise_edge[j] = -1;
+            }
+            else /*fall*/
+            {
+                trace.pts_fall_edge[j] = -1;
+            }
+
+            j = j - 1;
+            double trace_width = fabs(trace.pts_rise_edge[j] - trace.pts_fall_edge[j]);
+
+            if(fabs(trace.mean_trace_width[j] - trace_width) < zeta*trace.mean_trace_width[j])
+            {
+                backtracking = false;
+            }
+        }
+
+}
+
 
 void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<Trace>& traces, int analyzed_col)
 {
-    const int tolerance = 15;
 
-    int idx_candidate = 0;
+    const int tolerance = 50;/// Com 10 é sussa, ja nesse nivel ja faz o choosen edge ser desviado por riscos laterais, precisa implementar o backtracking process;
+
+    static int prog_counter = 0;
+    prog_counter++;
+    double progress = 100*analyzed_col/mat_src.cols;
+    if(prog_counter % 100 == 0)
+    {
+        cerrv(progress)
+    }
 
     for(int i = 0; i < traces.size(); ++i)
     {
+        // calculation of mean width
+
+        if(analyzed_col > 0)
+        {
+            const double sigma = 1/1000;
+
+            traces[i].mean_trace_width.push_back(
+                sigma*fabs(traces[i].pos_estimated_fall - traces[i].pos_estimated_rise)
+                + (1.0f-sigma)*(traces[i].mean_trace_width[analyzed_col-1])
+                );
+
+            // cerrv(fabs(traces[i].pos_estimated_fall - traces[i].pos_estimated_rise));
+            // cerrv((traces[i].mean_trace_width[analyzed_col-1]));
+            // cerrv(traces[i].mean_trace_width[analyzed_col])
+        }
+
+        // tolerance range defined
+
         double tolerance_min = traces[i].pos_estimated_rise - tolerance;
         double tolerance_max = traces[i].pos_estimated_rise + tolerance;
 
+        /// tunning the tolerance boundary.
         if(tolerance_min < 0)
         {
             tolerance_min = 0;
@@ -475,19 +629,33 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
         {
             tolerance_max = mat_src.rows - 1;
         }
-        if(i < traces.size()-1 && tolerance_max > traces[i+1].pos_estimated_fall)
-        {
-            tolerance_max = traces[i+1].pos_estimated_fall;
-        }
+        // if(i < traces.size()-1 && tolerance_max > traces[i+1].pos_estimated_fall)
+        // {
+        //     tolerance_max = traces[i+1].pos_estimated_fall;
+        // }
 
-        double candidate_k = closest_to_estimation(pts_candidate, traces[i].pos_estimated_rise, tolerance_min, tolerance_max);
+        // gets candidate closest to estimation point
+        // double candidate_rise = closest_to_estimation(pts_candidate, traces[i].pos_estimated_rise, tolerance_min, tolerance_max);
+        // vector<double> candidates_rise = in_range_candidates(pts_candidate, traces[i].pos_estimated_rise, tolerance_min, tolerance_max);
 
-        traces[i].pts_rise_edge.push_back(candidate_k);
+        draw_red(analyzed_col, traces[i].pos_estimated_rise);
+        draw_pixel(analyzed_col, tolerance_min, 60, 60, 60);
+        draw_pixel(analyzed_col, tolerance_max, 60, 60, 60);
 
-        if(candidate_k > 0)
-        {
-            traces[i].pos_estimated_rise = candidate_k;
-        }
+        traces[i].candidates_r_k = in_range_candidates(pts_candidate, traces[i].pos_estimated_rise, tolerance_min, tolerance_max);
+
+        double choosen_rise = closest_to_estimation(traces[i].candidates_r_k, traces[i].pos_estimated_rise);
+
+
+        traces[i].pts_rise_edge.push_back(choosen_rise);
+
+        // if(choosen_rise > 0)
+        // {
+        //     traces[i].pos_estimated_rise = choosen_rise;
+        // }
+
+        /////////////////////
+
 
         tolerance_min = traces[i].pos_estimated_fall - tolerance;
         tolerance_max = traces[i].pos_estimated_fall + tolerance;
@@ -496,10 +664,10 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
         {
             tolerance_min = 0;
         }
-        if(i > 0 && tolerance_min < traces[i-1].pos_estimated_rise)
-        {
-            tolerance_min = traces[i-1].pos_estimated_rise;
-        }
+        // if(i > 0 && tolerance_min < traces[i-1].pos_estimated_rise)
+        // {
+        //     tolerance_min = traces[i-1].pos_estimated_rise;
+        // }
 
         if(tolerance_max > mat_src.rows - 1)
         {
@@ -510,15 +678,129 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
             tolerance_max = traces[i+1].pos_estimated_rise;
         }
 
-        candidate_k = closest_to_estimation(pts_candidate, traces[i].pos_estimated_fall, tolerance_min, tolerance_max);
+        // double candidate_fall = closest_to_estimation(pts_candidate, traces[i].pos_estimated_fall, tolerance_min, tolerance_max);
+        // vector<double> candidates_fall = in_range_candidates(pts_candidate, traces[i].pos_estimated_fall, tolerance_min, tolerance_max);
 
-        traces[i].pts_fall_edge.push_back(candidate_k);
+        draw_red(analyzed_col, traces[i].pos_estimated_fall);
+        draw_pixel(analyzed_col, tolerance_min, 30, 30, 30);
+        draw_pixel(analyzed_col, tolerance_max, 30, 30, 30);
 
-        if(candidate_k > 0)
+
+        traces[i].candidates_f_k = in_range_candidates(pts_candidate, traces[i].pos_estimated_fall, tolerance_min, tolerance_max);
+
+        double choosen_fall = closest_to_estimation(traces[i].candidates_f_k, traces[i].pos_estimated_fall);
+
+        traces[i].pts_fall_edge.push_back(choosen_fall);
+
+        // if(choosen_fall > 0)
+        // {
+        //     traces[i].pos_estimated_fall = choosen_fall;
+        // }
+
+        // if(0) //temp
+        if(analyzed_col == 21) //temp
         {
-            traces[i].pos_estimated_fall = candidate_k;
+            cerrv(i)
+            cerrv(traces[i].candidates_r_k.size());
+            cerrv(traces[i].pos_estimated_rise);
+            cerrv(choosen_rise);
+            cerr("");
+            cerrv(traces[i].candidates_f_k.size());
+            cerrv(traces[i].pos_estimated_fall);
+            cerrv(choosen_fall);
+            cerr("");
         }
     }
+
+    // for cases where trace has more than 1 candidate in its acceptable range
+
+    for (int i = 0; i < traces.size(); ++i)
+    {
+        bool condition_rise = false;
+        bool condition_fall = false;
+
+        if(traces[i].candidates_r_k.size() > 1) /*test rise condition*/
+        {
+            double width_dif_ref = fabs(fabs(traces[i].pos_estimated_fall - traces[i].pts_rise_edge[analyzed_col]) - traces[i].mean_trace_width[analyzed_col]);
+
+            for (int k = 0; k < traces[i].candidates_r_k.size(); ++k)
+            {
+                double width_dif_k = fabs(fabs(traces[i].pos_estimated_fall - traces[i].candidates_r_k[k]) - traces[i].mean_trace_width[analyzed_col]);
+                if(width_dif_k < width_dif_ref)
+                {
+                    condition_rise = true;
+                    // backtracking(traces[i], 0 /*rise*/, analyzed_col);
+                    // draw_pixel(analyzed_col, traces[i].candidates_r_k[k], 120, 120, 120);
+                    // traces[i].pts_rise_edge[analyzed_col] = traces[i].candidates_r_k[k];
+                    // width_dif_k = fabs(fabs(traces[i].pos_estimated_fall - traces[i].candidates_r_k[k]) - traces[i].mean_trace_width[analyzed_col]);
+                }
+            }
+
+        }
+        if(traces[i].candidates_f_k.size() > 1) /*test fall condition*/
+        {
+            double width_dif_ref = fabs(fabs(traces[i].pts_fall_edge[analyzed_col] - traces[i].pos_estimated_rise) - traces[i].mean_trace_width[analyzed_col]);
+
+            for (int k = 0; k < traces[i].candidates_f_k.size(); ++k)
+            {
+                double width_dif_k = fabs(fabs(traces[i].candidates_f_k[k] - traces[i].pos_estimated_rise) - traces[i].mean_trace_width[analyzed_col]);
+                if(width_dif_k < width_dif_ref)
+                {
+                    condition_fall = true;
+                    // draw_pixel(analyzed_col, traces[i].candidates_f_k[k], 90, 90, 90);
+                    // traces[i].pts_fall_edge[analyzed_col] = traces[i].candidates_r_k[k];
+                }
+            }
+        }
+
+        if(condition_rise && !condition_fall)
+        {
+            backtracking(traces[i], 0 /*rise*/, analyzed_col);
+        }
+        else if(!condition_rise && condition_fall)
+        {
+            backtracking(traces[i], 1 /*rise*/, analyzed_col);
+        }
+
+
+        if(traces[i].pts_rise_edge[analyzed_col] > 0) // if its defined
+        {
+            traces[i].pos_estimated_rise = traces[i].pts_rise_edge[analyzed_col];
+        }
+        else
+        {
+            double displacement = estimated_displacement(traces, i, analyzed_col, true /*rise*/);
+            traces[i].pos_estimated_rise += displacement;
+            if(traces[i].pos_estimated_rise > 4096)
+            {
+                cerr("ESTORO")
+                cerrv(i)
+                cerrv(analyzed_col)
+                cerrv(traces[i].pos_estimated_rise)
+                cerrv(displacement)
+            }
+        }
+
+        if(traces[i].pts_fall_edge[analyzed_col] > 0)
+        {
+            traces[i].pos_estimated_fall = traces[i].pts_fall_edge[analyzed_col];
+        }
+        else
+        {
+            double displacement = estimated_displacement(traces, i, analyzed_col, false /*fall*/);
+            traces[i].pos_estimated_fall += displacement;
+            if(traces[i].pos_estimated_fall > 4096)
+            {
+                cerr("ESTORO")
+                cerrv(i)
+                cerrv(analyzed_col)
+                cerrv(traces[i].pos_estimated_fall)
+                cerrv(displacement)
+            }
+        }
+
+    }
+
 }
 
 
@@ -558,10 +840,11 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
     vector<Trace> traces = initialize_traces(mat_src, mat_src2, 30);
 
     Mat mat_dy;
-    filter(mat_src, mat_dy, traces[0].trace_width, 0.2);
+    filter(mat_src, mat_dy, traces[0].mean_trace_width[0], 0.2);
 
     // this for processes the image columnwise.
-    for (int i = 0; i < mat_src.cols; ++i)
+    for (int i = 0; i < 500; ++i) //temp
+    // for (int i = 0; i < mat_src.cols; ++i)
     {
         g_idx_col = i;
         vector<Candidate> pts_candidate;
@@ -571,7 +854,7 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
         define_traces(mat_src, pts_candidate, traces, i);
     }
 
-    print_percent_undef(traces);
+    // print_percent_undef(traces);
 
     return traces;
 }

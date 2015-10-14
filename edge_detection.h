@@ -17,12 +17,17 @@ struct Trace
     vector<double> pts_rise_edge;
     vector<double> pts_fall_edge;
 
+    // double tolerance = 100; // called m in the thesis, its the distance of tolerance around the reference candidate
+
+    // time slice variables
+
     double pos_estimated_rise; // this will change from column to column
     double pos_estimated_fall; //
 
-    double tolerance = 100; // called m in the thesis, its the distance of tolerance around the reference candidate
+    vector<double> candidates_r_k;
+    vector<double> candidates_f_k;
 
-    double trace_width; // trace width estimated to that time slice (column).
+    vector<double> mean_trace_width; // trace width estimated to that time slice (column).
 };
 
 #define cerr(x) cerr << x;
@@ -52,7 +57,7 @@ Mat n_first_last_col_average(const Mat& mat_ring_first, const Mat& mat_ring_last
 
 vector<Trace> initialize_traces(const Mat& mat_ring_first, const Mat& mat_ring_last, int range_average);
 
-double closest_to_estimation(vector<Candidate> pts_candidate, double estimated_edge, double tolerance_min, double tolerance_max);
+double closest_to_estimation(vector<double> possible_candidates, double estimated_edge);
 
 void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<Trace>& traces, int analyzed_col);
 

@@ -124,7 +124,6 @@ static void cb_filter(int param, void* user_data)
 static void cb_col_profile(int param, void* user_data)
 {
     Mat show_mat_dy = resize_mat(g_mat_dy);
-
     // normalized sel_col param, bounded in [0,1]
     float norm_sel_col = (float)g_prm_sel_col/LIMIT_SEL_COL;
     int orig_mat_col = g_prm_sel_col;
@@ -272,24 +271,30 @@ int main ( int argc, char** argv )
 
     vector<Trace> traces = trace_following(g_mat_src, g_mat_src2, mat_traces);
 
-    for (int i = 0; i < traces.size(); ++i)
-    {
-        for (int j = 0; j < traces[i].pts_rise_edge.size(); ++j)
-        {
-            if(traces[i].pts_rise_edge[j] > 0)
-            {
-                mat_traces.col(j).at<Vec3b>((int)traces[i].pts_rise_edge[j])[1] = 255;
-            }
-            if(traces[i].pts_fall_edge[j] > 0)
-            {
-                mat_traces.col(j).at<Vec3b>((int)traces[i].pts_fall_edge[j])[1] = 255;
-            }
-        }
-    }
+    // for (int i = 0; i < traces.size(); ++i)
+    // {
+    //     for (int j = 0; j < traces[i].pts_rise_edge.size(); ++j)
+    //     {
+    //         if(j == 21) //temp
+    //         {
+    //             cerrv(i)
+    //             cerrv(traces[i].pts_fall_edge[j])
+    //         }
+
+    //         if(traces[i].pts_rise_edge[j] > 0)
+    //         {
+    //             mat_traces.col(j).at<Vec3b>((int)traces[i].pts_rise_edge[j])[1] = 255;
+    //         }
+    //         if(traces[i].pts_fall_edge[j] > 0)
+    //         {
+    //             mat_traces.col(j).at<Vec3b>((int)traces[i].pts_fall_edge[j])[1] = 255;
+    //         }
+    //     }
+    // }
 
     // namedWindow( "traces", CV_WINDOW_AUTOSIZE );
     // imshow( "traces", resize_mat(mat_traces) );
-    imwrite( "LIXASSO.bmp", mat_traces);
+    imwrite( "output.bmp", mat_traces);
 
     waitKey(0);
 
@@ -301,16 +306,17 @@ int main ( int argc, char** argv )
     namedWindow( "original", CV_WINDOW_AUTOSIZE );
 
     // Create trackbars
-    createTrackbar( "N Average", "original", &g_prm_avrg, 30, cb_avrg);
-    // createTrackbar( "kernel alpha", "original", &g_prm_alpha, LIMIT_ALPHA, cb_filter);
-    // createTrackbar( "Column section", "original", &g_prm_sel_col, LIMIT_SEL_COL, cb_col_profile);
+    // createTrackbar( "N Average", "original", &g_prm_avrg, 30, cb_avrg);
+    createTrackbar( "kernel alpha", "original", &g_prm_alpha, LIMIT_ALPHA, cb_filter);
+    createTrackbar( "Column section", "original", &g_prm_sel_col, LIMIT_SEL_COL, cb_col_profile);
 
     // open refreshed windows
-    // cb_filter(0, 0);
-    cb_avrg(0, 0);
+    cb_filter(0, 0);
+    // cb_avrg(0, 0);
     imshow( "original", resize_mat(g_mat_src) );
 
     waitKey(0);
+    // while(cin.get() != 'x')
 
     return 0;
 }
