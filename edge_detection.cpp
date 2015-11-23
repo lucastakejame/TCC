@@ -30,7 +30,9 @@ void draw_blue(int x, int y)
         g_temp_mat->col(x).at<Vec3b>(y)[0] = 255;
 }
 
-
+/*
+Encontra valor minimo no array entrege partind de idx_begin por lenght_sweep casas
+*/
 int find_min(const Mat& mat_col, int idx_begin, int length_sweep)
 {
     int min;
@@ -49,6 +51,9 @@ int find_min(const Mat& mat_col, int idx_begin, int length_sweep)
     return min;
 }
 
+/*
+Encontra valor máximo no array entrege partind de idx_begin por lenght_sweep casas
+*/
 int find_max(const Mat& mat_col, int idx_begin, int length_sweep)
 {
     int max;
@@ -67,6 +72,10 @@ int find_max(const Mat& mat_col, int idx_begin, int length_sweep)
     return max;
 }
 
+
+/*
+Retorna o valor da mediana do vetor entregue
+*/
 double get_median(vector<double>& distances)
 {
     double median;
@@ -87,6 +96,11 @@ double get_median(vector<double>& distances)
 
 }
 
+
+/*
+Retorna um array em que cada elemento é a média dos elementos
+correspondentes em n_cols partindo da coluna idx_col_first
+*/
 Mat col_average(const Mat& mat_src, int idx_col_first, int n_cols)
 {
     Mat mat_n_average;
@@ -106,6 +120,10 @@ Mat col_average(const Mat& mat_src, int idx_col_first, int n_cols)
 
 }
 
+
+/*
+Associa ao mat_dy o filtro derivativo na direção perpendicular às trilhas
+*/
 void filter(const Mat& mat_src, Mat& mat_dy, int trace_width, float alpha)
 {
     int sz_kernel = alpha*trace_width;
@@ -142,7 +160,9 @@ void filter(const Mat& mat_src, Mat& mat_dy, int trace_width, float alpha)
     }
 }
 
-// Return a vector with edge candidates located on the mat_dy_col
+/*
+Retorna um vetor com todos possíveis candidatos a borda localizados na mat_dy_col
+*/
 vector<Candidate> get_edge_candidates(const Mat& mat_src_col, const Mat& mat_dy_col, float threshold)
 {
     vector<Candidate> pts_candidate;
@@ -186,9 +206,15 @@ vector<Candidate> get_edge_candidates(const Mat& mat_src_col, const Mat& mat_dy_
     }
 }
 
+
+/*
+Essa função é relacionada ao modelo de trilha apresentado na tese
+A e B são, respectivamente, o topo do perfil da trilha numa imagem negativa ( o que chamamos de traço )
+e o valor da base da colina no perfil da trilha.
+*/
 void get_A_B(const Mat& mat_src_col, const Mat& mat_dy_col, vector<Candidate>& pts_candidate)
 {
-    int idx_last_marked = 0; // used as boundary
+    int idx_last_marked = 0; // usado como fronteira para marcar até onde foi varrido no array
 
     trust(pts_candidate.size() > 0);
 
@@ -197,20 +223,20 @@ void get_A_B(const Mat& mat_src_col, const Mat& mat_dy_col, vector<Candidate>& p
         int idx_src_row;
         float val_col_xtrm;
 
-        if(i < pts_candidate.size())
+        if(i < pts_candidate.size()) // se ainda for um ponto válido.
         {
             idx_src_row = pts_candidate[i].position;  // idx in a column seen as array in mat_src
 
-            val_col_xtrm = mat_dy_col.at<float>(idx_src_row); // value of extremum in mat_dy
+            val_col_xtrm = mat_dy_col.at<float>(idx_src_row); // value of extremum (value in the candidate position) in mat_dy
         }
-        else // thats after the last point.
+        else // depois do último ponto do vetor, serve apenas pra completar o trecho do último candidato até o final da matriz.
         {
             idx_src_row = mat_src_col.rows;  // idx in a column seen as array in mat_src
 
             val_col_xtrm = -mat_dy_col.at<float>(pts_candidate[i-1].position); // value of extremum in mat_dy
         }
 
-        if(val_col_xtrm > 0) // if its a positive edge (crescent from left to right)
+        if(val_col_xtrm > 0) // Borda de subida
         {
             int min = find_min(mat_src_col, idx_last_marked, idx_src_row - idx_last_marked);
 
@@ -224,7 +250,7 @@ void get_A_B(const Mat& mat_src_col, const Mat& mat_dy_col, vector<Candidate>& p
                 pts_candidate[i].val_left = min;
             }
         }
-        else // if its a negative edge
+        else // Borda de descida
         {
             int max = find_max(mat_src_col, idx_last_marked, idx_src_row - idx_last_marked);
 
@@ -335,7 +361,7 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
             }
         }
 
-        // pts_candidate[i].position = pos_new_edge;////// Quando descomento isso o perfil da trilha e a borda encontrada ficam estranhos
+        pts_candidate[i].position = pos_new_edge;////// Quando descomento isso o perfil da trilha e a borda encontrada ficam estranhos
 
         draw_blue(g_idx_col ,pos_new_edge);
     }
@@ -528,8 +554,8 @@ double estimated_displacement(vector<Trace> traces, int idx_trace, int col, bool
             }
 
 
-            cerrv(mean_displacement)
-            cerrv(mean_counter)
+            // cerrv(mean_displacement)
+            // cerrv(mean_counter)
 
             displacement = mean_displacement/mean_counter;
         }
@@ -582,14 +608,15 @@ void backtracking(Trace trace, /*Trace*/
 void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<Trace>& traces, int analyzed_col)
 {
 
-    const int tolerance = 50;/// Com 10 é sussa, ja nesse nivel ja faz o choosen edge ser desviado por riscos laterais, precisa implementar o backtracking process;
+    const int tolerance = 20;/// Com 10 é sussa, ja nesse nivel ja faz o choosen edge ser desviado por riscos laterais, precisa implementar o backtracking process;
 
     static int prog_counter = 0;
     prog_counter++;
     double progress = 100*analyzed_col/mat_src.cols;
     if(prog_counter % 100 == 0)
     {
-        cerrv(progress)
+        printf("\rprogress: %i", (int)progress);
+        // cerrv(progress)
     }
 
     for(int i = 0; i < traces.size(); ++i)
@@ -697,8 +724,8 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
         //     traces[i].pos_estimated_fall = choosen_fall;
         // }
 
-        // if(0) //temp
-        if(analyzed_col == 21) //temp
+        if(0) //temp
+        // if(analyzed_col == 21) //temp
         {
             cerrv(i)
             cerrv(traces[i].candidates_r_k.size());
@@ -843,7 +870,7 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
     filter(mat_src, mat_dy, traces[0].mean_trace_width[0], 0.2);
 
     // this for processes the image columnwise.
-    for (int i = 0; i < 500; ++i) //temp
+    for (int i = 0; i < 1000; ++i) //temp
     // for (int i = 0; i < mat_src.cols; ++i)
     {
         g_idx_col = i;

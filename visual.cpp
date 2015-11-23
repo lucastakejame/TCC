@@ -232,9 +232,94 @@ static void mark_col(Mat mat_src, int col_src)
     line(mat_src, start, end, Scalar(255), thickness, line_type);
 }
 
+/*
+Changes mat to landscape format
+negative
+*/
+void prepare_mat(Mat& src)
+{
+    if(src.rows > src.cols)
+    {
+        src = src.t();
+    }
+
+    bitwise_not(src, src);
+}
+
 /** @function main */
 int main ( int argc, char** argv )
 {
+/*    vector<Mat> vec_mat;
+    Mat fig0;
+    Mat fig1;
+    Mat fig2;
+    Mat fig3;
+    Mat fig4;
+    Mat fig5;
+    Mat fig6;
+    Mat fig7;
+
+    if(argc > 2)
+    {
+
+        switch(argc)
+        {
+            case 9:
+            {
+                fig7 = imread(argv[8], CV_LOAD_IMAGE_GRAYSCALE);
+            }
+            case 8:
+            {
+                fig6 = imread(argv[7], CV_LOAD_IMAGE_GRAYSCALE);
+            }
+            case 7:
+            {
+                fig5 = imread(argv[6], CV_LOAD_IMAGE_GRAYSCALE);
+            }
+            case 6:
+            {
+                fig4 = imread(argv[5], CV_LOAD_IMAGE_GRAYSCALE);
+            }
+            case 5:
+            {
+                fig3 = imread(argv[4], CV_LOAD_IMAGE_GRAYSCALE);
+            }
+            case 4:
+            {
+                fig2 = imread(argv[3], CV_LOAD_IMAGE_GRAYSCALE);
+            }
+            case 3:
+            {
+                fig0 = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
+                fig1 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
+            }
+            break;
+        }
+
+
+    }
+
+    Mat h_concat;
+
+    vconcat(fig0, fig1, h_concat);
+    vconcat(h_concat, fig2, h_concat);
+    vconcat(h_concat, fig3, h_concat);
+    vconcat(h_concat, fig4, h_concat);
+    vconcat(h_concat, fig5, h_concat);
+    vconcat(h_concat, fig6, h_concat);
+    vconcat(h_concat, fig7, h_concat);
+
+    prepare_mat(h_concat);
+
+    namedWindow( "ring", CV_WINDOW_AUTOSIZE );
+    imshow("ring",  resize_mat(h_concat));
+
+    waitKey(0);
+
+    return 0;
+
+*/
+    //COMEÇO
     // Load an image
     g_mat_src = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 
