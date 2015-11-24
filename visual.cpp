@@ -249,7 +249,7 @@ void prepare_mat(Mat& src)
 /** @function main */
 int main ( int argc, char** argv )
 {
-/*    vector<Mat> vec_mat;
+    vector<Mat> vec_mat;
     Mat fig0;
     Mat fig1;
     Mat fig2;
@@ -261,7 +261,6 @@ int main ( int argc, char** argv )
 
     if(argc > 2)
     {
-
         switch(argc)
         {
             case 9:
@@ -295,22 +294,51 @@ int main ( int argc, char** argv )
             }
             break;
         }
-
-
     }
 
     Mat h_concat;
 
-    vconcat(fig0, fig1, h_concat);
-    vconcat(h_concat, fig2, h_concat);
-    vconcat(h_concat, fig3, h_concat);
-    vconcat(h_concat, fig4, h_concat);
-    vconcat(h_concat, fig5, h_concat);
-    vconcat(h_concat, fig6, h_concat);
-    vconcat(h_concat, fig7, h_concat);
+    if(argc >= 3)
+    {
+        vconcat(fig0, fig1, h_concat);
+        g_mat_src2 = fig1;
+    }
+    if(argc >= 4)
+    {
+        vconcat(h_concat, fig2, h_concat);
+        g_mat_src2 = fig2;
+    }
+    if(argc >= 5)
+    {
+        vconcat(h_concat, fig3, h_concat);
+        g_mat_src2 = fig3;
+    }
+    if(argc >= 6)
+    {
+        vconcat(h_concat, fig4, h_concat);
+        g_mat_src2 = fig4;
+    }
+    if(argc >= 7)
+    {
+        vconcat(h_concat, fig5, h_concat);
+        g_mat_src2 = fig5;
+    }
+    if(argc >= 8)
+    {
+        vconcat(h_concat, fig6, h_concat);
+        g_mat_src2 = fig6;
+    }
+    if(argc >= 9)
+    {
+        vconcat(h_concat, fig7, h_concat);
+        g_mat_src2 = fig7;
+    }
 
     prepare_mat(h_concat);
+    prepare_mat(g_mat_src2);
 
+    g_mat_src = h_concat;
+/*
     namedWindow( "ring", CV_WINDOW_AUTOSIZE );
     imshow("ring",  resize_mat(h_concat));
 
@@ -318,7 +346,7 @@ int main ( int argc, char** argv )
 
     return 0;
 
-*/
+
     //COMEÇO
     // Load an image
     g_mat_src = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE);
@@ -351,8 +379,13 @@ int main ( int argc, char** argv )
     if( !g_mat_src.data )
         { return -1; }
 
+*/
+
+    g_mat_dy.create(g_mat_src.rows, g_mat_src.cols, CV_32FC1);
 
     Mat mat_traces = Mat::zeros(g_mat_src.rows, g_mat_src.cols, CV_8UC3);
+
+    waitKey(0);
 
     vector<Trace> traces = trace_following(g_mat_src, g_mat_src2, mat_traces);
 

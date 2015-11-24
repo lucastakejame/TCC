@@ -1,4 +1,11 @@
 #include "edge_detection.h"
+#include <sys/time.h>
+
+// variaveis teste
+const int gg_tolerance = 8;
+
+
+
 
 Mat* g_temp_mat;
 int g_idx_col;
@@ -604,20 +611,27 @@ void backtracking(Trace trace, /*Trace*/
 
 }
 
+void print_progress(int analyzed_col, int total_cols)
+{
+    static int prog_counter = 0;
+    prog_counter++;
+    double progress = 100*analyzed_col/total_cols;
+    if(prog_counter % 10 == 0)
+    {
+        printf("%6i/%6i progress: %i\n", analyzed_col, total_cols, (int)progress);
+    }
+}
+
 
 void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<Trace>& traces, int analyzed_col)
 {
+    clock_t t0, t1, t2, t3, t4, t5, t6;
+    double delta0 = 0, delta1 = 0, delta2 = 0, delta3 = 0;
 
-    const int tolerance = 20;/// Com 10 é sussa, ja nesse nivel ja faz o choosen edge ser desviado por riscos laterais, precisa implementar o backtracking process;
+    int tolerance = gg_tolerance;/// Com 10 é sussa, ja nesse nivel ja faz o choosen edge ser desviado por riscos laterais, precisa implementar o backtracking process;
 
-    static int prog_counter = 0;
-    prog_counter++;
-    double progress = 100*analyzed_col/mat_src.cols;
-    if(prog_counter % 100 == 0)
-    {
-        printf("\rprogress: %i", (int)progress);
-        // cerrv(progress)
-    }
+    // print_progress(analyzed_col, mat_src.cols);
+
 
     for(int i = 0; i < traces.size(); ++i)
     {
@@ -740,11 +754,14 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
     }
 
     // for cases where trace has more than 1 candidate in its acceptable range
+    t0 = clock();
 
     for (int i = 0; i < traces.size(); ++i)
     {
         bool condition_rise = false;
         bool condition_fall = false;
+
+        t1 = clock();
 
         if(traces[i].candidates_r_k.size() > 1) /*test rise condition*/
         {
@@ -764,6 +781,10 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
             }
 
         }
+
+        t2 = clock();
+        delta0 += t2-t1;
+
         if(traces[i].candidates_f_k.size() > 1) /*test fall condition*/
         {
             double width_dif_ref = fabs(fabs(traces[i].pts_fall_edge[analyzed_col] - traces[i].pos_estimated_rise) - traces[i].mean_trace_width[analyzed_col]);
@@ -789,6 +810,10 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
             backtracking(traces[i], 1 /*rise*/, analyzed_col);
         }
 
+        t3 = clock();
+        delta1 += t3-t2;
+
+        // ESSE BLOCO DE CODIGO GASTA MTO TEMPO NO MEIO DA ANALISE
 
         if(traces[i].pts_rise_edge[analyzed_col] > 0) // if its defined
         {
@@ -808,6 +833,10 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
             }
         }
 
+        t4 = clock();
+        delta2 += t4-t3;
+
+        // ESSE BLOCO DE CODIGO GASTA MTO TEMPO NO MEIO DA ANALISE
         if(traces[i].pts_fall_edge[analyzed_col] > 0)
         {
             traces[i].pos_estimated_fall = traces[i].pts_fall_edge[analyzed_col];
@@ -826,7 +855,19 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
             }
         }
 
+        t5 = clock();
+        delta3 += t5-t4;
     }
+    t6 = clock();
+
+    double deltaFinal = t6-t0;
+
+    printf("%i/%i\n", analyzed_col, mat_src.cols);
+    printf("1o bloco em %%: %f\n", 100.0*delta0/deltaFinal);
+    printf("2o bloco em %%: %f\n", 100.0*delta1/deltaFinal);
+    printf("3o bloco em %%: %f\n", 100.0*delta2/deltaFinal);
+    printf("4o bloco em %%: %f\n", 100.0*delta3/deltaFinal);
+    printf("total: %f\n\n", deltaFinal/1000.0f);
 
 }
 
@@ -843,8 +884,8 @@ void print_percent_undef(vector<Trace> traces)
                 count++;
             }
         }
-        cout << "trace rise [" << i << "] has " <<  100*(float)count/traces[i].pts_rise_edge.size() << "% of undefined points" <<  endl;
-        count = 0;
+        // cout << "trace rise [" << i << "] has " <<  100*(float)count/traces[i].pts_rise_edge.size() << "% of undefined points" <<  endl;
+        // count = 0;
         for (int j = 0; j < traces[i].pts_fall_edge.size(); ++j)
         {
             if(traces[i].pts_fall_edge[j] < 0)
@@ -852,9 +893,10 @@ void print_percent_undef(vector<Trace> traces)
                 count++;
             }
         }
-        cout << "trace fall [" << i << "] has " <<  100*(float)count/traces[i].pts_rise_edge.size() << "% of undefined points" <<  endl;
-        count = 0;
+        // cout << "trace fall [" << i << "] has " <<  100*(float)count/traces[i].pts_rise_edge.size() << "% of undefined points" <<  endl;
+        // count = 0;
     }
+    cout << "total undefined points : " << count << endl;
 
 }
 
@@ -870,18 +912,19 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
     filter(mat_src, mat_dy, traces[0].mean_trace_width[0], 0.2);
 
     // this for processes the image columnwise.
-    for (int i = 0; i < 1000; ++i) //temp
+    for (int i = 0; i < 15000; ++i) //temp
     // for (int i = 0; i < mat_src.cols; ++i)
     {
         g_idx_col = i;
         vector<Candidate> pts_candidate;
+
         edge_detection_coarse(mat_src.col(i), mat_dy.col(i), pts_candidate);
         edge_detection_fine(mat_src.col(i), pts_candidate);
 
         define_traces(mat_src, pts_candidate, traces, i);
     }
 
-    // print_percent_undef(traces);
+    print_percent_undef(traces);
 
     return traces;
 }
