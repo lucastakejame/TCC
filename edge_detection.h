@@ -33,6 +33,9 @@ struct Trace
 #define cerr(x) cerr << x;
 #define cerrln(x) cerr << x << endl;
 #define cerrv(x) cerr <<  #x << " : " << x << endl;
+#define cerrif(x, cond) if(cond){cerr << x << endl;}
+#define cerrvif(x, cond) if(cond){cerr << #x << " : " << x << endl;}
+#define ifdo(cond, act) if(cond){(act);}
 
 #define testing 1
 #define trust(a_true_condition) if (testing && !(a_true_condition)) {cerr("dont trust line: ");cerr(__LINE__);cerr(" from file ");cerrln(__FILE__);};

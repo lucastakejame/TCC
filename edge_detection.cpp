@@ -2,8 +2,9 @@
 #include <sys/time.h>
 
 // variaveis teste
-const int gg_tolerance = 8;
-
+// const int gg_tolerance = 5;
+// const int gg_tolerance = 8;
+const int gg_tolerance = 10;
 
 
 
@@ -286,27 +287,33 @@ void edge_detection_coarse(const Mat& mat_src_col, const Mat& mat_dy_col, vector
 
 void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidate) // candidates must have left and right values.
 {
+
+
     // refined edge location
     for (int i = 0; i < pts_candidate.size(); ++i)
     {
         double threshold = 0.7; // beta, in the edge model.
         double val_edge;
-        int row_edge = (int) pts_candidate[i].position;
+        int pos_old_edge = (int) pts_candidate[i].position;
 
         int val_smaller;
         int val_bigger;
 
         double pos_new_edge;
 
+
         if(pts_candidate[i].val_left < pts_candidate[i].val_right) // if its a rise edge
         {
+
+
             // val_right is A, val_left is B
             // hence v = t*(A-B) + B
             val_edge = threshold*fabs(pts_candidate[i].val_right - pts_candidate[i].val_left) + pts_candidate[i].val_left;
 
             if(val_edge < pts_candidate[i].val_position) // edge canditate is at val_position's left
             {
-                int k = (int)row_edge;
+
+                int k = (int)pos_old_edge;
                 while(mat_src_col.at<unsigned char>(k) > val_edge)
                 {
                     k--;
@@ -317,12 +324,17 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
 
                 // interpolation to find edge position with subpixel accuracy
 
-                pos_new_edge = (val_edge-val_smaller)/(val_bigger-val_smaller) + k;
+                int inclination = val_bigger-val_smaller;
+                if(inclination != 0)
+                {
+                    pos_new_edge = (val_edge-val_smaller)/(inclination) + k;
+                }
 
             }
             else
             {
-                int k = (int)row_edge;
+
+                int k = (int)pos_old_edge;
                 while(mat_src_col.at<unsigned char>(k) < val_edge)
                 {
                     k++;
@@ -332,17 +344,22 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
 
                 // interpolation to find edge position with subpixel accuracy
 
-                pos_new_edge = (val_edge-val_smaller)/(val_bigger-val_smaller) + k-1;
+                int inclination = val_bigger-val_smaller;
+                if(inclination != 0)
+                {
+                    pos_new_edge = (val_edge-val_smaller)/(inclination) + k-1;
+                }
 
             }
         }
         else //if its a fall edge
         {
+
             val_edge = threshold*(pts_candidate[i].val_left - pts_candidate[i].val_right) + pts_candidate[i].val_right;
 
             if(val_edge < pts_candidate[i].val_position)
             {
-                int k = (int)row_edge;
+                int k = (int)pos_old_edge;
                 while(mat_src_col.at<unsigned char>(k) > val_edge)
                 {
                     k++;
@@ -350,12 +367,16 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
                 val_smaller = mat_src_col.at<unsigned char>(k);
                 val_bigger = mat_src_col.at<unsigned char>(k-1);
 
-                pos_new_edge = (double)k - (val_edge-val_smaller)/(val_bigger-val_smaller);
+                int inclination = val_bigger-val_smaller;
+                if(inclination != 0)
+                {
+                    pos_new_edge = (double)k - (val_edge-val_smaller)/(inclination);
+                }
 
             }
             else
             {
-                int k = (int)row_edge;
+                int k = (int)pos_old_edge;
                 while(mat_src_col.at<unsigned char>(k) < val_edge)
                 {
                     k--;
@@ -363,12 +384,17 @@ void edge_detection_fine(const Mat& mat_src_col, vector<Candidate>& pts_candidat
                 val_smaller = mat_src_col.at<unsigned char>(k+1);
                 val_bigger = mat_src_col.at<unsigned char>(k);
 
-                pos_new_edge = (double)k - (val_edge-val_smaller)/(val_bigger-val_smaller);
+                int inclination = val_bigger-val_smaller;
+                if(inclination != 0)
+                {
+                    pos_new_edge = (double)k - (val_edge-val_smaller)/(inclination);
+                }
 
             }
         }
 
         pts_candidate[i].position = pos_new_edge;////// Quando descomento isso o perfil da trilha e a borda encontrada ficam estranhos
+
 
         draw_blue(g_idx_col ,pos_new_edge);
     }
@@ -625,12 +651,12 @@ void print_progress(int analyzed_col, int total_cols)
 
 void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<Trace>& traces, int analyzed_col)
 {
-    clock_t t0, t1, t2, t3, t4, t5, t6;
-    double delta0 = 0, delta1 = 0, delta2 = 0, delta3 = 0;
+    // clock_t t0, t1, t2, t3, t4, t5, t6;
+    // double delta0 = 0, delta1 = 0, delta2 = 0, delta3 = 0;
 
     int tolerance = gg_tolerance;/// Com 10 é sussa, ja nesse nivel ja faz o choosen edge ser desviado por riscos laterais, precisa implementar o backtracking process;
 
-    // print_progress(analyzed_col, mat_src.cols);
+    print_progress(analyzed_col, mat_src.cols);
 
 
     for(int i = 0; i < traces.size(); ++i)
@@ -754,14 +780,14 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
     }
 
     // for cases where trace has more than 1 candidate in its acceptable range
-    t0 = clock();
+    // t0 = clock();
 
     for (int i = 0; i < traces.size(); ++i)
     {
         bool condition_rise = false;
         bool condition_fall = false;
 
-        t1 = clock();
+        // t1 = clock();
 
         if(traces[i].candidates_r_k.size() > 1) /*test rise condition*/
         {
@@ -782,8 +808,8 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
 
         }
 
-        t2 = clock();
-        delta0 += t2-t1;
+        // t2 = clock();
+        // delta0 += t2-t1;
 
         if(traces[i].candidates_f_k.size() > 1) /*test fall condition*/
         {
@@ -810,8 +836,8 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
             backtracking(traces[i], 1 /*rise*/, analyzed_col);
         }
 
-        t3 = clock();
-        delta1 += t3-t2;
+        // t3 = clock();
+        // delta1 += t3-t2;
 
         // ESSE BLOCO DE CODIGO GASTA MTO TEMPO NO MEIO DA ANALISE
 
@@ -833,8 +859,8 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
             }
         }
 
-        t4 = clock();
-        delta2 += t4-t3;
+        // t4 = clock();
+        // delta2 += t4-t3;
 
         // ESSE BLOCO DE CODIGO GASTA MTO TEMPO NO MEIO DA ANALISE
         if(traces[i].pts_fall_edge[analyzed_col] > 0)
@@ -855,11 +881,11 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
             }
         }
 
-        t5 = clock();
-        delta3 += t5-t4;
+        // t5 = clock();
+        // delta3 += t5-t4;
     }
-    t6 = clock();
-
+    // t6 = clock();
+/*
     double deltaFinal = t6-t0;
 
     printf("%i/%i\n", analyzed_col, mat_src.cols);
@@ -867,7 +893,7 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
     printf("2o bloco em %%: %f\n", 100.0*delta1/deltaFinal);
     printf("3o bloco em %%: %f\n", 100.0*delta2/deltaFinal);
     printf("4o bloco em %%: %f\n", 100.0*delta3/deltaFinal);
-    printf("total: %f\n\n", deltaFinal/1000.0f);
+    printf("total: %f\n\n", deltaFinal/1000.0f);*/
 
 }
 
@@ -901,6 +927,7 @@ void print_percent_undef(vector<Trace> traces)
 }
 
 
+
 vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_visual)
 {
 
@@ -912,8 +939,8 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
     filter(mat_src, mat_dy, traces[0].mean_trace_width[0], 0.2);
 
     // this for processes the image columnwise.
-    for (int i = 0; i < 15000; ++i) //temp
-    // for (int i = 0; i < mat_src.cols; ++i)
+    // for (int i = 0; i < 3000; ++i) //temp
+    for (int i = 0; i < mat_src.cols; ++i)
     {
         g_idx_col = i;
         vector<Candidate> pts_candidate;
