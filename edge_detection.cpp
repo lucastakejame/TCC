@@ -1,4 +1,5 @@
 #include "edge_detection.h"
+#include "make_wav.h"
 #include <sys/time.h>
 
 // variaveis teste
@@ -24,18 +25,45 @@ void draw_pixel(int x, int y, unsigned char red, unsigned char green, unsigned c
 
 void draw_red(int x, int y)
 {
-    if(debug_paint)
-        g_temp_mat->col(x).at<Vec3b>(y)[2] = 255;
+    if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+    {
+        if(debug_paint)
+            g_temp_mat->col(x).at<Vec3b>(y)[2] = 255;
+    }
+    else
+    {
+        cerr("cant draw in")
+        cerrv(x)
+        cerrv(y)
+    }
 }
 void draw_green(int x, int y)
 {
-    if(debug_paint)
-        g_temp_mat->col(x).at<Vec3b>(y)[1] = 255;
+    if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+    {
+        if(debug_paint)
+            g_temp_mat->col(x).at<Vec3b>(y)[1] = 255;
+    }
+    else
+    {
+        cerr("cant draw in")
+        cerrv(x)
+        cerrv(y)
+    }
 }
 void draw_blue(int x, int y)
 {
-    if(debug_paint)
-        g_temp_mat->col(x).at<Vec3b>(y)[0] = 255;
+    if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+    {
+        if(debug_paint)
+            g_temp_mat->col(x).at<Vec3b>(y)[0] = 255;
+    }
+    else
+    {
+        cerr("cant draw in")
+        cerrv(x)
+        cerrv(y)
+    }
 }
 
 /*
@@ -926,7 +954,172 @@ void print_percent_undef(vector<Trace> traces)
 
 }
 
+void undefined_points_treatment(vector<Trace>& traces)
+{
+    double width = traces[0].pts_fall_edge[0] - traces[0].pts_rise_edge[0];
+    double bottom = traces[1].pts_rise_edge[0] - traces[0].pts_fall_edge[0];
 
+    for (int i = 0; i < traces.size(); ++i)
+    {
+        for (int j = 0; j < traces[i].pts_rise_edge.size(); ++j)
+        {
+
+            if(traces[i].pts_rise_edge[j] < 0)
+            {
+                if(i % 2 == 0)
+                {
+                    if(traces[i].pts_fall_edge[j] > 0)
+                    {
+                        traces[i].pts_rise_edge[j] = traces[i].pts_fall_edge[j] - width;
+                    }
+                    else if(traces[i+1].pts_rise_edge[j] > 0)
+                    {
+                        traces[i].pts_rise_edge[j] = traces[i].pts_rise_edge[j] - (width + bottom);
+                    }
+                    else if(traces[i+1].pts_fall_edge[j] > 0)
+                    {
+                        traces[i].pts_rise_edge[j] = traces[i].pts_fall_edge[j] - (2*width + bottom);
+                    }
+                    else // falta implementar caso encontre ponto definido num tempo a frente
+                    {
+                        traces[i].pts_rise_edge[j] = traces[i].pts_rise_edge[j-1];
+                    }
+                }
+                else
+                {
+                    if(traces[i].pts_fall_edge[j] > 0)
+                    {
+                        traces[i].pts_rise_edge[j] = traces[i].pts_fall_edge[j] - width;
+                    }
+                    else // falta implementar caso encontre ponto definido num tempo a frente
+                    {
+                        traces[i].pts_rise_edge[j] = traces[i].pts_rise_edge[j-1];
+                    }
+                }
+                draw_green(j, traces[i].pts_rise_edge[j]);
+            }
+
+            if(traces[i].pts_fall_edge[j] < 0)
+            {
+                if(i % 2 == 0)
+                {
+                    if(traces[i+1].pts_rise_edge[j] > 0)
+                    {
+                        traces[i].pts_fall_edge[j] = traces[i+1].pts_rise_edge[j] - bottom;
+                    }
+                    else if(traces[i+1].pts_fall_edge[j] > 0)
+                    {
+                        traces[i].pts_fall_edge[j] = traces[i+1].pts_rise_edge[j] - (width + bottom);
+                    }
+                    else // falta implementar caso encontre ponto definido num tempo a frente
+                    {
+                        traces[i].pts_fall_edge[j] = traces[i].pts_fall_edge[j-1];
+                    }
+                }
+                else
+                {
+                    traces[i].pts_fall_edge[j] = traces[i].pts_fall_edge[j-1];
+                }
+                draw_green(j, traces[i].pts_fall_edge[j]);
+            }
+
+        }
+    }
+}
+
+vector<double> unify_groove(vector<Trace> traces)
+{
+
+    vector<double> groove;
+
+    double dist_to_last_groove = 0;
+
+    for(int i = traces.size()-1; i > 0; i -= 2) // começa pela ultima trilha (mais embaixo na imagem)
+    {
+        for (int j = 0; j < traces[i].pts_rise_edge.size(); ++j)
+        {
+            double mean = (traces[i].pts_fall_edge[j] + traces[i].pts_rise_edge[j] +
+                            traces[i-1].pts_fall_edge[j] + traces[i-1].pts_rise_edge[j])/4 + dist_to_last_groove;
+
+            groove.push_back(mean);
+        }
+
+        if(i > 2)
+        {
+            dist_to_last_groove += traces[i].pts_fall_edge[0] - traces[i-2].pts_fall_edge[0];
+        }
+    }
+
+
+    // derivada
+    for (int idx = 0; idx < groove.size()-1; ++idx)
+    {
+        groove[idx] = groove[idx+1] - groove[idx];
+    }
+    groove[groove.size()-1] = groove.size()-2;
+
+
+    //resampling
+
+    int n_samples = groove.size()-1;
+
+    double sampling_time = 0;
+
+    double old_samplerate = 104000;
+    double new_samplerate = 44100;
+
+    double old_period = 1/old_samplerate;
+    double new_period = 1/new_samplerate;
+
+    double total_time = n_samples * old_period;
+
+    vector<double> resampled;
+
+    while(sampling_time < total_time)
+    {
+        double decimal_index = sampling_time/old_period;
+
+        int int_index = (int) decimal_index;
+
+        double delta = decimal_index - int_index;
+
+        double new_sample = groove[int_index] + (groove[int_index+1] - groove[int_index]) * delta;
+
+        resampled.push_back(new_sample);
+
+        sampling_time += new_period;
+    }
+
+    return resampled;
+}
+
+void export_wave(vector<double> pre_audio, int samplerate)
+{
+    int amplitude = 32000;
+
+    double max = 0;
+    for (int i = 0; i < pre_audio.size(); ++i)
+    {
+        if(max < fabs(pre_audio[i]))
+        {
+            max = fabs(pre_audio[i]);
+        }
+    }
+
+    short *wav_buff = new short int[pre_audio.size()];
+
+    for (int i = 0; i < pre_audio.size(); ++i)
+    {
+        pre_audio[i] /= max;
+
+        wav_buff[i] = pre_audio[i] * amplitude;
+    }
+
+    write_wav("tcc.wav", pre_audio.size(), wav_buff, samplerate);
+
+    return;
+
+}
 
 vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_visual)
 {
@@ -939,8 +1132,8 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
     filter(mat_src, mat_dy, traces[0].mean_trace_width[0], 0.2);
 
     // this for processes the image columnwise.
-    // for (int i = 0; i < 3000; ++i) //temp
-    for (int i = 0; i < mat_src.cols; ++i)
+    for (int i = 0; i < 3000; ++i) //temp
+    // for (int i = 0; i < mat_src.cols; ++i)
     {
         g_idx_col = i;
         vector<Candidate> pts_candidate;
@@ -952,6 +1145,14 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
     }
 
     print_percent_undef(traces);
+
+    undefined_points_treatment(traces);
+
+    vector<double> pre_audio = unify_groove(traces);
+
+    export_wave(pre_audio, 44100);
+
+    cerr("CABOOO")
 
     return traces;
 }

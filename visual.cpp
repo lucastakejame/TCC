@@ -380,7 +380,6 @@ int main ( int argc, char** argv )
         { return -1; }
 
 */
-    // REIMPLEMENTAR TRACE FOLLOWING PRA PRECISAR CARREGAR SÓ UMA IMAGEM POR VEZ
     g_mat_dy.create(g_mat_src.rows, g_mat_src.cols, CV_32FC1);
 
     Mat mat_traces = Mat::zeros(g_mat_src.rows, g_mat_src.cols, CV_8UC3);
@@ -410,7 +409,8 @@ int main ( int argc, char** argv )
 
     // namedWindow( "traces", CV_WINDOW_AUTOSIZE );
     // imshow( "traces", resize_mat(mat_traces) );
-    imwrite( "output.bmp", mat_traces);
+    imwrite( "output_undef.bmp", mat_traces);
+    // imwrite( "output.bmp", mat_traces);
 
     waitKey(0);
 
