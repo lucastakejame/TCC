@@ -5,7 +5,7 @@
 // variaveis teste
 // const int gg_tolerance = 5;
 // const int gg_tolerance = 8;
-const int gg_tolerance = 10;
+const int gg_tolerance = 14;
 
 
 
@@ -670,7 +670,7 @@ void print_progress(int analyzed_col, int total_cols)
     static int prog_counter = 0;
     prog_counter++;
     double progress = 100*analyzed_col/total_cols;
-    if(prog_counter % 10 == 0)
+    if(prog_counter % 100 == 0)
     {
         printf("%6i/%6i progress: %i\n", analyzed_col, total_cols, (int)progress);
     }
@@ -683,8 +683,6 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
     // double delta0 = 0, delta1 = 0, delta2 = 0, delta3 = 0;
 
     int tolerance = gg_tolerance;/// Com 10 é sussa, ja nesse nivel ja faz o choosen edge ser desviado por riscos laterais, precisa implementar o backtracking process;
-
-    print_progress(analyzed_col, mat_src.cols);
 
 
     for(int i = 0; i < traces.size(); ++i)
@@ -873,19 +871,19 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
         {
             traces[i].pos_estimated_rise = traces[i].pts_rise_edge[analyzed_col];
         }
-        else
-        {
-            double displacement = estimated_displacement(traces, i, analyzed_col, true /*rise*/);
-            traces[i].pos_estimated_rise += displacement;
-            if(traces[i].pos_estimated_rise > 4096)
-            {
-                cerr("ESTORO")
-                cerrv(i)
-                cerrv(analyzed_col)
-                cerrv(traces[i].pos_estimated_rise)
-                cerrv(displacement)
-            }
-        }
+        // else
+        // {
+        //     double displacement = estimated_displacement(traces, i, analyzed_col, true /*rise*/);
+        //     traces[i].pos_estimated_rise += displacement;
+        //     if(traces[i].pos_estimated_rise > 4096)
+        //     {
+        //         cerr("ESTORO")
+        //         cerrv(i)
+        //         cerrv(analyzed_col)
+        //         cerrv(traces[i].pos_estimated_rise)
+        //         cerrv(displacement)
+        //     }
+        // }
 
         // t4 = clock();
         // delta2 += t4-t3;
@@ -895,19 +893,19 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
         {
             traces[i].pos_estimated_fall = traces[i].pts_fall_edge[analyzed_col];
         }
-        else
-        {
-            double displacement = estimated_displacement(traces, i, analyzed_col, false /*fall*/);
-            traces[i].pos_estimated_fall += displacement;
-            if(traces[i].pos_estimated_fall > 4096)
-            {
-                cerr("ESTORO")
-                cerrv(i)
-                cerrv(analyzed_col)
-                cerrv(traces[i].pos_estimated_fall)
-                cerrv(displacement)
-            }
-        }
+        // else
+        // {
+        //     double displacement = estimated_displacement(traces, i, analyzed_col, false /*fall*/);
+        //     traces[i].pos_estimated_fall += displacement;
+        //     if(traces[i].pos_estimated_fall > 4096)
+        //     {
+        //         cerr("ESTORO")
+        //         cerrv(i)
+        //         cerrv(analyzed_col)
+        //         cerrv(traces[i].pos_estimated_fall)
+        //         cerrv(displacement)
+        //     }
+        // }
 
         // t5 = clock();
         // delta3 += t5-t4;
@@ -1034,19 +1032,19 @@ vector<double> unify_groove(vector<Trace> traces)
 
     double dist_to_last_groove = 0;
 
-    for(int i = traces.size()-1; i > 0; i -= 2) // começa pela ultima trilha (mais embaixo na imagem)
+    for(int i = 0; i < traces.size()-1; i += 2)
     {
         for (int j = 0; j < traces[i].pts_rise_edge.size(); ++j)
         {
             double mean = (traces[i].pts_fall_edge[j] + traces[i].pts_rise_edge[j] +
-                            traces[i-1].pts_fall_edge[j] + traces[i-1].pts_rise_edge[j])/4 + dist_to_last_groove;
+                            traces[i+1].pts_fall_edge[j] + traces[i+1].pts_rise_edge[j])/4 + dist_to_last_groove;
 
             groove.push_back(mean);
         }
 
-        if(i > 2)
+        if(i < traces.size()-3)
         {
-            dist_to_last_groove += traces[i].pts_fall_edge[0] - traces[i-2].pts_fall_edge[0];
+            dist_to_last_groove -= traces[i].pts_fall_edge[0] - traces[i+2].pts_fall_edge[0];
         }
     }
 
@@ -1095,7 +1093,7 @@ vector<double> unify_groove(vector<Trace> traces)
 
 void export_wave(vector<double> pre_audio, int samplerate)
 {
-    int amplitude = 32000;
+    double amplitude = 10000;
 
     double max = 0;
     for (int i = 0; i < pre_audio.size(); ++i)
@@ -1108,11 +1106,15 @@ void export_wave(vector<double> pre_audio, int samplerate)
 
     short *wav_buff = new short int[pre_audio.size()];
 
+    cout << "wav_buff[i]" << endl;
     for (int i = 0; i < pre_audio.size(); ++i)
     {
-        pre_audio[i] /= max;
+        // pre_audio[i] /= 0.1;
 
-        wav_buff[i] = pre_audio[i] * amplitude;
+        wav_buff[i] = short(pre_audio[i] * amplitude);
+
+        cout << pre_audio[i] << endl;
+        cout << wav_buff[i] << endl;
     }
 
     write_wav("tcc.wav", pre_audio.size(), wav_buff, samplerate);
@@ -1132,9 +1134,12 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
     filter(mat_src, mat_dy, traces[0].mean_trace_width[0], 0.2);
 
     // this for processes the image columnwise.
-    for (int i = 0; i < 3000; ++i) //temp
-    // for (int i = 0; i < mat_src.cols; ++i)
+    // for (int i = 0; i < 3000; ++i) //temp
+    for (int i = 0; i < mat_src.cols; ++i)
     {
+
+        print_progress(i, mat_src.cols);
+
         g_idx_col = i;
         vector<Candidate> pts_candidate;
 
@@ -1146,13 +1151,16 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
 
     print_percent_undef(traces);
 
+    cerrln("Tratando indefinidos")
     undefined_points_treatment(traces);
 
+    cerrln("unificando")
     vector<double> pre_audio = unify_groove(traces);
 
+    cerrln("exportando")
     export_wave(pre_audio, 44100);
 
-    cerr("CABOOO")
+    cerrln("ACABOU")
 
     return traces;
 }
