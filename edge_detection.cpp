@@ -954,6 +954,12 @@ void print_percent_undef(vector<Trace> traces)
 
 void undefined_points_treatment(vector<Trace>& traces)
 {
+
+    bool redefined_edge0 = false;
+    bool redefined_edge1 = false;
+    bool redefined_edge2 = false;
+    bool redefined_edge3 = false;
+
     double width = traces[0].pts_fall_edge[0] - traces[0].pts_rise_edge[0];
     double bottom = traces[1].pts_rise_edge[0] - traces[0].pts_fall_edge[0];
 
@@ -962,61 +968,95 @@ void undefined_points_treatment(vector<Trace>& traces)
         for (int j = 0; j < traces[i].pts_rise_edge.size(); ++j)
         {
 
-            if(traces[i].pts_rise_edge[j] < 0)
+            if(traces[i].pts_rise_edge[j] < 0)  // edge 0 in groove
             {
                 if(i % 2 == 0)
                 {
-                    if(traces[i].pts_fall_edge[j] > 0)
+                    if(traces[i].pts_fall_edge[j] > 0) // edge 1 defined?
                     {
                         traces[i].pts_rise_edge[j] = traces[i].pts_fall_edge[j] - width;
                     }
-                    else if(traces[i+1].pts_rise_edge[j] > 0)
+                    else if(traces[i+1].pts_rise_edge[j] > 0) // edge 2 defined?
                     {
-                        traces[i].pts_rise_edge[j] = traces[i].pts_rise_edge[j] - (width + bottom);
+                        traces[i].pts_rise_edge[j] = traces[i+1].pts_rise_edge[j] - (width + bottom);
                     }
-                    else if(traces[i+1].pts_fall_edge[j] > 0)
+                    else if(traces[i+1].pts_fall_edge[j] > 0) // edge 3 defined?
                     {
-                        traces[i].pts_rise_edge[j] = traces[i].pts_fall_edge[j] - (2*width + bottom);
+                        traces[i].pts_rise_edge[j] = traces[i+1].pts_fall_edge[j] - (2*width + bottom);
                     }
                     else // falta implementar caso encontre ponto definido num tempo a frente
                     {
                         traces[i].pts_rise_edge[j] = traces[i].pts_rise_edge[j-1];
                     }
+                    redefined_edge0 = true;
                 }
-                else
+                else // edge 2 in groove
                 {
-                    if(traces[i].pts_fall_edge[j] > 0)
+                    if(traces[i].pts_fall_edge[j] > 0) // edge 3 defined?
                     {
                         traces[i].pts_rise_edge[j] = traces[i].pts_fall_edge[j] - width;
+                    }
+                    else if(!redefined_edge0)
+                    {
+                        traces[i].pts_rise_edge[j] = traces[i-1].pts_rise_edge[j] + (width + bottom);
+                    }
+                    else if(!redefined_edge1)
+                    {
+                        traces[i].pts_rise_edge[j] = traces[i-1].pts_fall_edge[j] + bottom;
                     }
                     else // falta implementar caso encontre ponto definido num tempo a frente
                     {
                         traces[i].pts_rise_edge[j] = traces[i].pts_rise_edge[j-1];
                     }
+                    redefined_edge2 = true;
                 }
                 draw_green(j, traces[i].pts_rise_edge[j]);
             }
 
             if(traces[i].pts_fall_edge[j] < 0)
             {
-                if(i % 2 == 0)
+                if(i % 2 == 0) // edge 1 in groove
                 {
-                    if(traces[i+1].pts_rise_edge[j] > 0)
+                    if(traces[i+1].pts_rise_edge[j] > 0) // edge 2 defined?
                     {
                         traces[i].pts_fall_edge[j] = traces[i+1].pts_rise_edge[j] - bottom;
                     }
-                    else if(traces[i+1].pts_fall_edge[j] > 0)
+                    else if(traces[i+1].pts_fall_edge[j] > 0) // edge 3 defined?
                     {
-                        traces[i].pts_fall_edge[j] = traces[i+1].pts_rise_edge[j] - (width + bottom);
+                        traces[i].pts_fall_edge[j] = traces[i+1].pts_fall_edge[j] - (width + bottom);
+                    }
+                    else if(!redefined_edge0)
+                    {
+                        traces[i].pts_fall_edge[j] = traces[i].pts_rise_edge[j] + width;
                     }
                     else // falta implementar caso encontre ponto definido num tempo a frente
                     {
                         traces[i].pts_fall_edge[j] = traces[i].pts_fall_edge[j-1];
                     }
+                    redefined_edge1 = true;
                 }
-                else
+                else // edge 3 in groove
                 {
-                    traces[i].pts_fall_edge[j] = traces[i].pts_fall_edge[j-1];
+                    if(!redefined_edge0)
+                    {
+                        traces[i].pts_fall_edge[j] = traces[i-1].pts_rise_edge[j] + (2*width + bottom);
+                    }
+                    else if(!redefined_edge1)
+                    {
+                        traces[i].pts_fall_edge[j] = traces[i-1].pts_fall_edge[j] + (width + bottom);
+                    }
+                    else if(!redefined_edge2)
+                    {
+                        traces[i].pts_fall_edge[j] = traces[i].pts_rise_edge[j] + width;
+                    }
+                    else
+                    {
+                        traces[i].pts_fall_edge[j] = traces[i].pts_fall_edge[j-1];
+                    }
+                    redefined_edge0 = false; // reseting.
+                    redefined_edge1 = false; // reseting.
+                    redefined_edge2 = false; // reseting.
+                    redefined_edge3 = false; // reseting.
                 }
                 draw_green(j, traces[i].pts_fall_edge[j]);
             }
