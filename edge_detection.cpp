@@ -11,7 +11,7 @@ const int gg_tolerance = 14;
 
 Mat* g_temp_mat;
 int g_idx_col;
-bool debug_paint = true;
+bool debug_paint = false;
 
 void draw_pixel(int x, int y, unsigned char red, unsigned char green, unsigned char blue)
 {
@@ -25,44 +25,32 @@ void draw_pixel(int x, int y, unsigned char red, unsigned char green, unsigned c
 
 void draw_red(int x, int y)
 {
-    if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+    if(debug_paint)
     {
-        if(debug_paint)
-            g_temp_mat->col(x).at<Vec3b>(y)[2] = 255;
-    }
-    else
-    {
-        cerr("cant draw in")
-        cerrv(x)
-        cerrv(y)
+        if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+        {
+                g_temp_mat->col(x).at<Vec3b>(y)[2] = 255;
+        }
     }
 }
 void draw_green(int x, int y)
 {
-    if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+    if(debug_paint)
     {
-        if(debug_paint)
-            g_temp_mat->col(x).at<Vec3b>(y)[1] = 255;
-    }
-    else
-    {
-        cerr("cant draw in")
-        cerrv(x)
-        cerrv(y)
+        if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+        {
+                g_temp_mat->col(x).at<Vec3b>(y)[1] = 255;
+        }
     }
 }
 void draw_blue(int x, int y)
 {
-    if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+    if(debug_paint)
     {
-        if(debug_paint)
-            g_temp_mat->col(x).at<Vec3b>(y)[0] = 255;
-    }
-    else
-    {
-        cerr("cant draw in")
-        cerrv(x)
-        cerrv(y)
+        if( x < g_temp_mat->cols && y < g_temp_mat->rows)
+        {
+                g_temp_mat->col(x).at<Vec3b>(y)[0] = 255;
+        }
     }
 }
 
@@ -500,8 +488,8 @@ vector<Trace> initialize_traces(const Mat& mat_ring_first, const Mat& mat_ring_l
         }
     }
 
-    cerrv(pts_candidate.size());
-    cerrv(traces.size());
+    printf("Número de bordas detectadas : %i\n",pts_candidate.size());
+    printf("Número de traços considerados : %i\n\n",traces.size());
 
     double median_width = get_median(profile_sections);
 
@@ -667,13 +655,27 @@ void backtracking(Trace trace, /*Trace*/
 
 void print_progress(int analyzed_col, int total_cols)
 {
+    static int last_progress = -1;
     static int prog_counter = 0;
+    double progress;
     prog_counter++;
-    double progress = 100*analyzed_col/total_cols;
-    if(prog_counter % 100 == 0)
+    if(analyzed_col == total_cols)
     {
-        printf("%6i/%6i progress: %i\n", analyzed_col, total_cols, (int)progress);
+        progress = 100;
     }
+    else
+    {
+        progress = 100*analyzed_col/total_cols;
+    }
+    if(last_progress != (int)progress)
+    {
+        cerr << "\r";
+        cerr << "Fatias de tempo analisadas : " << (int)progress << "%";
+        // printf("\r");
+        // printf("%6i/%6i progress: %i", analyzed_col, total_cols, (int)progress);
+    }
+
+    last_progress = progress;
 }
 
 
@@ -698,9 +700,6 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
                 + (1.0f-sigma)*(traces[i].mean_trace_width[analyzed_col-1])
                 );
 
-            // cerrv(fabs(traces[i].pos_estimated_fall - traces[i].pos_estimated_rise));
-            // cerrv((traces[i].mean_trace_width[analyzed_col-1]));
-            // cerrv(traces[i].mean_trace_width[analyzed_col])
         }
 
         // tolerance range defined
@@ -926,29 +925,28 @@ void define_traces(const Mat& mat_src, vector<Candidate> pts_candidate, vector<T
 
 void print_percent_undef(vector<Trace> traces)
 {
-    int count = 0;
+    int count_undef = 0;
+    int count_total = 0;
     for (int i = 0; i < traces.size(); ++i)
     {
         for (int j = 0; j < traces[i].pts_rise_edge.size(); ++j)
         {
             if(traces[i].pts_rise_edge[j] < 0)
             {
-                count++;
+                count_undef++;
             }
+            count_total++;
         }
-        // cout << "trace rise [" << i << "] has " <<  100*(float)count/traces[i].pts_rise_edge.size() << "% of undefined points" <<  endl;
-        // count = 0;
         for (int j = 0; j < traces[i].pts_fall_edge.size(); ++j)
         {
             if(traces[i].pts_fall_edge[j] < 0)
             {
-                count++;
+                count_undef++;
             }
+            count_total++;
         }
-        // cout << "trace fall [" << i << "] has " <<  100*(float)count/traces[i].pts_rise_edge.size() << "% of undefined points" <<  endl;
-        // count = 0;
     }
-    cout << "total undefined points : " << count << endl;
+    printf("Pontos indefinidos : %.1f %\n\n", (double)100*count_undef/count_total);
 
 }
 
@@ -1099,12 +1097,15 @@ vector<double> unify_groove(vector<Trace> traces)
 
     //resampling
 
+
     int n_samples = groove.size()-1;
 
     double sampling_time = 0;
 
     double old_samplerate = 104000;
     double new_samplerate = 44100;
+
+    printf("Reamostragem de %.0f para %.0f Hertz\n", old_samplerate, new_samplerate);
 
     double old_period = 1/old_samplerate;
     double new_period = 1/new_samplerate;
@@ -1131,7 +1132,7 @@ vector<double> unify_groove(vector<Trace> traces)
     return resampled;
 }
 
-void export_wave(vector<double> pre_audio, int samplerate)
+void export_wave(vector<double> pre_audio, int samplerate, const char* filename)
 {
     double amplitude = 10000;
 
@@ -1146,18 +1147,16 @@ void export_wave(vector<double> pre_audio, int samplerate)
 
     short *wav_buff = new short int[pre_audio.size()];
 
-    cout << "wav_buff[i]" << endl;
     for (int i = 0; i < pre_audio.size(); ++i)
     {
         // pre_audio[i] /= 0.1;
 
         wav_buff[i] = short(pre_audio[i] * amplitude);
 
-        cout << pre_audio[i] << endl;
-        cout << wav_buff[i] << endl;
     }
 
-    write_wav("tcc.wav", pre_audio.size(), wav_buff, samplerate);
+    write_wav((char*)filename, pre_audio.size(), wav_buff, samplerate);
+    // write_wav("tcc.wav", pre_audio.size(), wav_buff, samplerate);
 
     return;
 
@@ -1168,16 +1167,18 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
 
     g_temp_mat = &mat_visual;
 
+    cerrln("Inicializando traços.\n");
     vector<Trace> traces = initialize_traces(mat_src, mat_src2, 30);
 
     Mat mat_dy;
+    cerrln("Obtendo matriz de derivada.");
     filter(mat_src, mat_dy, traces[0].mean_trace_width[0], 0.2);
 
+    cerrln("Inicio do laço de detecção de candidatos.\n")
+
     // this for processes the image columnwise.
-    // for (int i = 0; i < 3000; ++i) //temp
     for (int i = 0; i < mat_src.cols; ++i)
     {
-
         print_progress(i, mat_src.cols);
 
         g_idx_col = i;
@@ -1189,18 +1190,20 @@ vector<Trace> trace_following(const Mat& mat_src, const Mat& mat_src2, Mat& mat_
         define_traces(mat_src, pts_candidate, traces, i);
     }
 
+    cerrln("\n")
     print_percent_undef(traces);
 
-    cerrln("Tratando indefinidos")
+    cerrln("Tratando pontos indefinidos.")
     undefined_points_treatment(traces);
 
-    cerrln("unificando")
+    cerrln("Unificando segmentos de trilha.")
     vector<double> pre_audio = unify_groove(traces);
 
-    cerrln("exportando")
-    export_wave(pre_audio, 44100);
+    const char* filename = "audio_extraido.wav";
 
-    cerrln("ACABOU")
+    printf("Exportando audio para o arquivo \"%s\"", filename);
+    export_wave(pre_audio, 44100, filename);
+
 
     return traces;
 }

@@ -37,7 +37,7 @@ LDFLAGS += -lopencv_imgproc
 # LDFLAGS += -lopencv_video
 # LDFLAGS += -lopencv_videostab
 
-EXEC = bin.bin
+EXEC = digitizer.bin
 
 OBJ_DIR = objects
 
